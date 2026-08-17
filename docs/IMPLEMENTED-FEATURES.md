@@ -5,7 +5,7 @@ This document describes the feature set currently shipped by
 [RULES.md](RULES.md); for released versions, see
 [CHANGELOG.md](../CHANGELOG.md).
 
-## Version 0.1.0
+## Version 0.2.0
 
 ### Analysis
 
@@ -15,9 +15,10 @@ This document describes the feature set currently shipped by
 - Exclusion of `src/lib.rs`, `src/main.rs` and `build.rs`
 - Exclusion of `mod.rs`, both via an import-only fast path and structurally,
   because no expected path is derived for that filename
-- Exclusion of definition-only files: `struct`, `enum`, `type` and `trait`
-  declarations alongside ignorable `use`, `extern crate`, bodiless `mod`,
-  `const`, `static`, macro and verbatim items
+- Exclusion of definition-only files: `struct`, `enum`, `type`, `trait`,
+  `const` and `static` declarations alongside ignorable `use`, `extern crate`
+  and bodiless `mod` items; a top-level macro or verbatim item keeps the file
+  in scope
 - Exclusion of trait impls carrying no methods, such as `impl Marker for T {}`
   and blanket alias impls
 - Exclusion of single-type files whose only inherent `impl` is a trivial `new`:

@@ -211,6 +211,83 @@ fn only_use_items_without_types_is_not_definition_only() {
     assert!(!result);
 }
 
+#[test]
+fn only_const_items_is_definition_only() {
+    // Arrange -- a module of lookup tables declares data and nothing else.
+    // There is no behaviour a mirrored test could assert, so demanding one
+    // produces a stub written purely to quieten the gate.
+    let source = r#"
+pub const KNOWN_FOREIGN_TRAITS: &[&str] = &["Display", "Debug", "Clone"];
+pub const STD_CONSTRUCTORS: &[&str] = &["Box", "Arc", "Rc"];
+"#;
+
+    // Act
+    let result = analyzer().is_definition_only_source(source).expect("parse");
+
+    // Assert
+    assert!(result);
+}
+
+#[test]
+fn only_static_items_is_definition_only() {
+    // Arrange -- `static` is the same shape of declaration as `const` and must
+    // not be treated differently just because it has a storage location.
+    let source = "pub static BANNER: &str = \"twin4rust\";";
+
+    // Act
+    let result = analyzer().is_definition_only_source(source).expect("parse");
+
+    // Assert
+    assert!(result);
+}
+
+#[test]
+fn use_items_alongside_consts_is_definition_only() {
+    // Arrange -- imports do not make a data module behavioural. What decides it
+    // is that something inert is declared, not that nothing is imported.
+    let source = r#"
+use std::time::Duration;
+pub const TIMEOUT: Duration = Duration::from_secs(30);
+"#;
+
+    // Act
+    let result = analyzer().is_definition_only_source(source).expect("parse");
+
+    // Assert
+    assert!(result);
+}
+
+#[test]
+fn only_a_macro_invocation_is_not_definition_only() {
+    // Arrange -- a top-level macro expands to code this analyzer never sees,
+    // so its unexpanded form says nothing about whether the file carries
+    // behaviour. Excluding it would under-report, which is the failure mode
+    // that matters for a gate: a silent pass.
+    let source = "lazy_static! { static ref REGISTRY: Registry = Registry::new(); }";
+
+    // Act
+    let result = analyzer().is_definition_only_source(source).expect("parse");
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
+fn a_macro_invocation_alongside_a_const_is_not_definition_only() {
+    // Arrange -- the const must not buy the macro a free pass. One opaque item
+    // is enough to keep the whole file in scope.
+    let source = r#"
+pub const VERSION: u32 = 1;
+tonic::include_proto!("consensus");
+"#;
+
+    // Act
+    let result = analyzer().is_definition_only_source(source).expect("parse");
+
+    // Assert
+    assert!(!result);
+}
+
 // ---------------------------------------------------------------------------
 // mod_file_is_import_only
 // ---------------------------------------------------------------------------

@@ -25,8 +25,8 @@ being silently dropped.
 Two structural categories cover the real noise:
 
 1. **Definition-only files** — every top-level non-test item is a `struct`,
-   `enum`, `type` or `trait` declaration, an ignorable item (`use`, `const`,
-   `static`, bodiless `mod`, macro, verbatim), or a trait impl carrying no
+   `enum`, `type`, `trait`, `const` or `static` declaration, an ignorable item
+   (`use`, `extern crate`, bodiless `mod`), or a trait impl carrying no
    methods. There is no executable behaviour to test.
 2. **Single-type files whose only `impl` is a trivial `new`** — one method, no
    generics, returns `Self`, body is a single struct literal, no branching, no

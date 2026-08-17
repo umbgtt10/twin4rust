@@ -75,10 +75,11 @@ test file for something with no behaviour to test.
 
 - `src/lib.rs`, `src/main.rs`, `build.rs`
 - **every `mod.rs`**, unconditionally — including one that carries behaviour
-- **Definition-only files**: every top-level item is a `struct`, `enum`, `type`
-  or `trait` declaration, or an ignorable `use`, `extern crate`, bodiless
-  `mod`, `const`, `static`, macro or verbatim item — with at least one of the
-  four type-declaring kinds present
+- **Definition-only files**: every top-level item is a `struct`, `enum`, `type`,
+  `trait`, `const` or `static` declaration, or an ignorable `use`, `extern
+  crate` or bodiless `mod` — with at least one declaring kind present. A
+  top-level macro invocation keeps the file in scope, since its expansion is
+  never seen
 - **Method-less trait impls**, such as `impl Marker for T {}` or a blanket
   `impl<T> Alias for T where ...`, which introduce nothing to assert
 - **Single-type files whose only `impl` is a trivial `new`** — one method, no

@@ -6,8 +6,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-17
+
+### Fixed
+
+- Files whose only declarations are `const` or `static` are now excluded as
+  definition-only. A module of lookup tables was previously reported as missing
+  a mirrored test, even though `docs/ADRs/ADR-StructuralExclusionsOverSemanticImportance.md`
+  cites "a 200-line const table needs no test" as a motivating case: `const`
+  and `static` were treated as ignorable filler that could accompany a type
+  declaration but never qualify a file on its own. A file whose top-level items
+  are all `use` statements is still reported — it declares nothing, so the new
+  allowance does not reach it.
+
 ### Changed
 
+- A top-level macro invocation or verbatim item now keeps a file in scope.
+  Both were previously ignorable, so a file pairing a `struct` with an opaque
+  macro body was excluded without the analyzer ever seeing what that macro
+  expanded to. A macro-only file was already reported; the change is to files
+  that mix a macro with declarations.
 - `OPEN_POINTS.md` moved to `docs/OPEN_POINTS.md`, alongside the other
   long-form documentation. The published 0.1.0 tarball carries it at the root.
 

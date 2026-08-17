@@ -94,17 +94,25 @@ The first is a fast path; the second is what actually makes the rule total.
 
 A file is definition-only when every top-level non-test item is one of:
 
-- `struct`, `enum`, `type`, `trait` — and at least one such item is present
-- `use`, `extern crate`, bodiless `mod`, `const`, `static`, macro or verbatim
-  items, which are ignorable rather than qualifying
+- `struct`, `enum`, `type`, `trait`, `const`, `static` — and at least one such
+  item is present
+- `use`, `extern crate`, bodiless `mod`, which are ignorable rather than
+  qualifying
 - a **trait impl carrying no methods**, such as `impl Marker for T {}` or a
   blanket `impl<T> Alias for T where ...`
 
 An empty trait impl introduces no executable behaviour, so a mirrored test
-could only restate what the compiler already proved.
+could only restate what the compiler already proved. A module of nothing but
+lookup tables is the same case: a `const` array has no branch to exercise.
 
 A file with no top-level items at all is *not* definition-only, and is
-reported. An empty file is more likely an accident than a decision.
+reported. An empty file is more likely an accident than a decision. A file of
+nothing but `use` statements is reported for the same reason — it declares
+nothing, so there is nothing to call inert.
+
+A top-level **macro invocation or verbatim item keeps the file in scope**,
+whatever else the file contains. The unexpanded form says nothing about the
+behaviour it expands to, so one opaque item disqualifies the whole file.
 
 Items carrying a `#[cfg(test)]` attribute are stripped before any of this is
 evaluated.

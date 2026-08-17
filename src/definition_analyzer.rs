@@ -40,14 +40,17 @@ impl DefinitionAnalyzer {
         }
 
         if self.all_definition_only(&items) {
-            let type_items = self.count_type_items(&items);
-            return type_items > 0;
+            return self.count_declaring_items(&items) > 0;
         }
 
         let detector = TrivialConstructorDetector::new();
         detector.file_has_trivial_constructor(&items)
     }
 
+    // `Item::Macro` and `Item::Verbatim` are deliberately absent: a top-level
+    // macro expands to code this analyzer never sees, so its unexpanded form
+    // says nothing about whether the file carries behaviour. One opaque item
+    // keeps the whole file in scope.
     fn all_definition_only(&self, items: &[&Item]) -> bool {
         items.iter().all(|item| {
             matches!(
@@ -57,8 +60,6 @@ impl DefinitionAnalyzer {
                     | Item::Mod(ItemMod { content: None, .. })
                     | Item::Const(_)
                     | Item::Static(_)
-                    | Item::Macro(_)
-                    | Item::Verbatim(_)
                     | Item::Struct(_)
                     | Item::Enum(_)
                     | Item::Type(_)
@@ -83,13 +84,22 @@ impl DefinitionAnalyzer {
         }
     }
 
-    fn count_type_items(&self, items: &[&Item]) -> usize {
+    // A file must declare at least one inert thing to count as definition-only.
+    // A type is one; so is a `const` or `static`, which is what makes a module
+    // of lookup tables exempt. A file of nothing but `use` statements declares
+    // nothing and stays in scope.
+    fn count_declaring_items(&self, items: &[&Item]) -> usize {
         items
             .iter()
             .filter(|item| {
                 matches!(
                     item,
-                    Item::Struct(_) | Item::Enum(_) | Item::Type(_) | Item::Trait(_)
+                    Item::Struct(_)
+                        | Item::Enum(_)
+                        | Item::Type(_)
+                        | Item::Trait(_)
+                        | Item::Const(_)
+                        | Item::Static(_)
                 )
             })
             .count()
