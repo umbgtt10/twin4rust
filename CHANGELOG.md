@@ -6,6 +6,44 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-17
+
+A new exclusion, so a minor rather than a patch: files that were reported
+yesterday can be exempt today.
+
+### Added
+
+- **Humble adapters are excluded.** A file holding a single type whose inherent
+  methods are all either the trivial `new` of the previous rule or a *forwarding
+  method* no longer needs a mirrored test. Forwarding means: returns nothing —
+  no return type or `-> ()` — with a body of exactly one statement, and that
+  statement is a call. At least one method must actually forward, so an empty
+  `impl` earns nothing and a constructor-only file is still answered by the
+  trivial-constructor rule under its own stricter conditions.
+
+  The return type carries the decision. A method that returns a value *produces*
+  something worth asserting, so `to_label(&self) -> String` stays in scope
+  however short its body; a method that returns nothing only says where an
+  effect lands, and where it lands is visible by reading it.
+
+  This is the trivial-constructor rule one method further along: that one exempts
+  a type that only *holds* what it was given, this one also exempts a type that
+  *forwards* it. The motivating case is a boundary a unit test cannot cross — a
+  probe flashing a board, a clock, a random source — where the reflex is to
+  invert the dependency behind a trait. A seam does not remove untestable code,
+  it concentrates it, and at a zero-logic boundary there is nothing to
+  concentrate: it buys a trait, a dynamic dispatch and a fake, in exchange for a
+  test asserting that a one-line delegation delegates, and the adapter behind the
+  new seam is itself a file with no mirror. Reasoning recorded in
+  `docs/ADRs/ADR-HumbleAdaptersAtUntestableBoundaries.md`.
+
+  The exemption is self-policing: add a branch, a retry, an error interpretation
+  or a second statement and the file is reported again, at exactly the point it
+  starts carrying a decision.
+
+- `HumbleAdapterDetector`, taking parsed `syn` items and no resolver, manifest or
+  filesystem, alongside `TrivialConstructorDetector` in `DefinitionAnalyzer`.
+
 ## [0.2.1] - 2026-08-17
 
 Two defects in how binaries are handled, both found by pointing the tool at the

@@ -58,7 +58,8 @@ Per source file, in this order. The first rule that fires ends the check.
 2. file is an entry point — `src/lib.rs`, `src/main.rs`, `build.rs`, or a file
    directly under `src/bin/` → ignored
 3. file is a `mod.rs` whose top-level items are all imports → ignored
-4. file is definition-only → ignored
+4. file is definition-only, a trivial-constructor holder, or a humble adapter
+   → ignored
 5. no expected test path could be derived → ignored
 6. expected test path exists → satisfied
 7. otherwise → **reported**
@@ -157,6 +158,48 @@ impl PeerRecoveryStatus {
     }
 }
 ```
+
+### 6. Humble adapters
+
+The rule above one method further along. A file is excluded when it holds
+exactly one `struct` or `enum`, no other top-level behaviour, and inherent
+`impl` blocks for that type whose every method is either the trivial `new`
+above or a **forwarding method**:
+
+- returns nothing — no return type, or `-> ()`
+- has a body of exactly one statement
+- that statement is a call or a method call
+
+At least one method must actually forward, so an empty `impl` earns nothing.
+
+```rust
+pub struct BoardHalter {
+    board_id: BoardId,
+    probe_serial: String,
+}
+
+impl BoardHalter {
+    pub fn halt(self) {
+        BoardEraser::new(self.board_id, &self.probe_serial).erase();
+    }
+}
+```
+
+The return type is what separates the cases. A method returning a value
+*produces* something, and what it produces is worth asserting — `to_label(&self)
+-> String` composes and stays in scope, one-line body or not. A method returning
+nothing only says where an effect lands.
+
+This exists because a seam does not remove untestable code, it concentrates it.
+Inverting the dependency here would buy a trait, a dynamic dispatch and a fake,
+in exchange for a test asserting that a one-line delegation delegates — and the
+adapter behind the new seam would be a file with no mirror of its own, so the gap
+would move rather than close. The reasoning is recorded in
+[ADR-HumbleAdaptersAtUntestableBoundaries](ADRs/ADR-HumbleAdaptersAtUntestableBoundaries.md).
+
+The exemption is self-policing. Add a branch, a retry, an error interpretation or
+a second statement, and the file stops qualifying and is reported again — at
+exactly the point it starts carrying a decision worth pinning.
 
 ---
 

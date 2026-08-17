@@ -5,7 +5,7 @@ This document describes the feature set currently shipped by
 [RULES.md](RULES.md); for released versions, see
 [CHANGELOG.md](../CHANGELOG.md).
 
-## Version 0.2.1
+## Version 0.3.0
 
 ### Analysis
 
@@ -26,6 +26,10 @@ This document describes the feature set currently shipped by
 - Exclusion of single-type files whose only inherent `impl` is a trivial `new`:
   no generics, returns `Self`, single struct-literal body, no branching, no
   loops, no helper calls
+- Exclusion of humble adapters: a single type whose inherent methods are all
+  either that trivial `new` or a forwarding method — returns nothing, one
+  statement, and that statement is a call. At least one must forward, so an
+  empty `impl` does not qualify
 - Exclusion of the `src/` tree of any package whose name ends in `-validation`,
   applied both at source-root resolution and per file
 - `#[cfg(test)]` items stripped before any classification runs

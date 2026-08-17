@@ -7,6 +7,7 @@ pub mod analyzer;
 pub mod args;
 pub mod config;
 pub mod definition_analyzer;
+pub mod humble_adapter_detector;
 pub mod manifest_resolver;
 pub mod missing_test_gap;
 pub mod package_context;

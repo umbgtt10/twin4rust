@@ -87,6 +87,10 @@ test file for something with no behaviour to test.
 - **Single-type files whose only `impl` is a trivial `new`** — one method, no
   generics, returns `Self`, body is a single struct literal, no branching, no
   loops, no helper calls. Pure data holders do not earn a test file.
+- **Humble adapters** — a single type whose methods all either hold what they
+  were given or *forward* it: return nothing, one statement, and that statement
+  is a call. A method returning a value stays in scope however short its body,
+  and one branch takes the whole file back out of the exemption
 - The `src/` tree of any package whose name ends in `-validation`
 - Items carrying `#[cfg(test)]`, stripped before any of the above is evaluated
 

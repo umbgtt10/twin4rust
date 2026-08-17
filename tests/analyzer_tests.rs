@@ -878,3 +878,117 @@ pub fn parse(input: &str) -> usize {
         report.missing
     );
 }
+
+#[test]
+fn a_humble_adapter_forwarding_to_an_untestable_boundary_is_ignored() {
+    // Arrange
+    let root = unique_temp_dir("humble_adapter_ignored");
+    write_file(
+        &root,
+        "src/board_halter.rs",
+        r#"
+use crate::board_eraser::BoardEraser;
+use crate::board_id::BoardId;
+
+pub struct BoardHalter {
+    board_id: BoardId,
+    probe_serial: String,
+}
+
+impl BoardHalter {
+    pub fn new(board_id: BoardId, probe_serial: &str) -> Self {
+        Self { board_id, probe_serial: probe_serial.to_string() }
+    }
+
+    pub fn halt(self) {
+        BoardEraser::new(self.board_id, &self.probe_serial).erase();
+    }
+}
+"#,
+    );
+
+    // Act
+    let report = analyzer()
+        .analyze_package(&package_context(&root, "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert!(
+        report.is_empty(),
+        "a constructor plus a forwarding method has nothing to mirror, got: {:?}",
+        report.missing
+    );
+}
+
+#[test]
+fn an_adapter_that_grows_a_branch_is_reported_again() {
+    // Arrange
+    let root = unique_temp_dir("humble_adapter_grown");
+    write_file(
+        &root,
+        "src/board_halter.rs",
+        r#"
+pub struct BoardHalter {
+    board_id: BoardId,
+    probe_serial: String,
+}
+
+impl BoardHalter {
+    pub fn halt(self) {
+        if self.probe_serial.is_empty() {
+            return;
+        }
+        BoardEraser::new(self.board_id, &self.probe_serial).erase();
+    }
+}
+"#,
+    );
+
+    // Act
+    let report = analyzer()
+        .analyze_package(&package_context(&root, "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert_eq!(
+        report.missing.len(),
+        1,
+        "an adapter carrying a decision must be reported, got: {:?}",
+        report.missing
+    );
+}
+
+#[test]
+fn a_single_type_file_whose_method_returns_a_value_is_still_reported() {
+    // Arrange
+    let root = unique_temp_dir("humble_adapter_returning_value");
+    write_file(
+        &root,
+        "src/rtt_channel_config.rs",
+        r#"
+pub struct RttChannelConfig {
+    buffer_size: RttBufferSize,
+    level: FirmwareLogLevel,
+}
+
+impl RttChannelConfig {
+    pub fn to_label(&self) -> String {
+        format!("{}@{}", self.buffer_size.label(), self.level.label())
+    }
+}
+"#,
+    );
+
+    // Act
+    let report = analyzer()
+        .analyze_package(&package_context(&root, "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert_eq!(
+        report.missing.len(),
+        1,
+        "a method producing a value must stay in scope, got: {:?}",
+        report.missing
+    );
+}

@@ -14,6 +14,7 @@ flat list is sufficient.
 | [ADR-NoCrossPackageSatisfaction](ADR-NoCrossPackageSatisfaction.md) | No flag lets one package's tests satisfy another package's mirrored-file expectation — such a flag shipped briefly and was removed after it improved the number while coverage stayed flat. |
 | [ADR-StructuralExclusionsOverSemanticImportance](ADR-StructuralExclusionsOverSemanticImportance.md) | Exclusions are decided from the `syn` AST by structure alone, never by inferring how important a file is — ambiguous files stay visible rather than being silently dropped. |
 | [ADR-CargoSubcommandPackaging](ADR-CargoSubcommandPackaging.md) | The crate publishes as `cargo-twin4rust` with library `twin4rust`, and strips the subcommand name cargo re-inserts at `argv[1]`. |
+| [ADR-HumbleAdaptersAtUntestableBoundaries](ADR-HumbleAdaptersAtUntestableBoundaries.md) | A single type whose methods only hold or forward is exempt — a seam concentrates untestable code rather than removing it, so demanding one at a zero-logic boundary buys a tautology test and moves the gap rather than closing it. |
 
 ## Template
 

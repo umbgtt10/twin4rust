@@ -6,6 +6,7 @@ use anyhow::{Context, Result};
 use quote::ToTokens;
 use syn::{Attribute, File, Item, ItemImpl, ItemMod, parse_file};
 
+use crate::humble_adapter_detector::HumbleAdapterDetector;
 use crate::trivial_constructor_detector::TrivialConstructorDetector;
 
 #[derive(Default)]
@@ -43,8 +44,11 @@ impl DefinitionAnalyzer {
             return self.count_declaring_items(&items) > 0;
         }
 
-        let detector = TrivialConstructorDetector::new();
-        detector.file_has_trivial_constructor(&items)
+        if TrivialConstructorDetector::new().file_has_trivial_constructor(&items) {
+            return true;
+        }
+
+        HumbleAdapterDetector::new().file_is_humble_adapter(&items)
     }
 
     // `Item::Macro` and `Item::Verbatim` are deliberately absent: a top-level
