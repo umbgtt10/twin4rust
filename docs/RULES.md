@@ -177,7 +177,7 @@ whose targets yield nothing falls back to `<manifest_dir>/src`.
 > classified, but no mirror path can be derived for it, so it is silently never
 > reported. Relatedly, a package with no `src/`-rooted target never walks `src/`
 > at all, because the fallback fires only when the collected set is empty. Both
-> are recorded in [OPEN_POINTS.md](../OPEN_POINTS.md); today the tool is only
+> are recorded in [OPEN_POINTS.md](OPEN_POINTS.md); today the tool is only
 > trustworthy on packages whose production sources live under `src/`.
 
 ---

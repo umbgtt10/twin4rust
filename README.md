@@ -106,7 +106,7 @@ all, because the fallback that adds it fires only when no root was collected.
 
 Until this is resolved, **`twin4rust` is only trustworthy on packages whose
 production sources live under `src/`.** Both behaviours are recorded in
-[OPEN_POINTS.md](OPEN_POINTS.md), along with the ordering and `mod.rs` quirks
+[docs/OPEN_POINTS.md](docs/OPEN_POINTS.md), along with the ordering and `mod.rs` quirks
 behind them.
 
 ## Choosing what to point it at
@@ -141,7 +141,7 @@ exercised.
 | [docs/ADRs/](docs/ADRs/README.md) | The load-bearing decisions and why they were forced |
 | [docs/IMPLEMENTED-FEATURES.md](docs/IMPLEMENTED-FEATURES.md) | What ships today |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | What comes next |
-| [OPEN_POINTS.md](OPEN_POINTS.md) | Known gaps, deliberately deferred |
+| [docs/OPEN_POINTS.md](docs/OPEN_POINTS.md) | Known gaps, deliberately deferred |
 | [CHANGELOG.md](CHANGELOG.md) | Release history |
 
 ## Related
