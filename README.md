@@ -73,7 +73,9 @@ no mirror path is not reported — see [Known limitations](#known-limitations).
 The gate is deliberately conservative — it would rather stay quiet than force a
 test file for something with no behaviour to test.
 
-- `src/lib.rs`, `src/main.rs`, `build.rs`
+- **Entry points**: `src/lib.rs`, `src/main.rs`, `build.rs`, and any file
+  directly under `src/bin/`. A module *inside* a `src/bin/<name>/` binary stays
+  in scope
 - **every `mod.rs`**, unconditionally — including one that carries behaviour
 - **Definition-only files**: every top-level item is a `struct`, `enum`, `type`,
   `trait`, `const` or `static` declaration, or an ignorable `use`, `extern

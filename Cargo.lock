@@ -78,7 +78,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-twin4rust"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "cargo_metadata",

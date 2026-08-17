@@ -6,6 +6,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-17
+
+Two defects in how binaries are handled, both found by pointing the tool at the
+first crate to declare a `[[bin]]` under `src/bin/`. A patch rather than a
+minor: neither changes policy, and each only stops the tool reporting something
+it should never have reported.
+
+### Fixed
+
+- A binary under `src/bin/` is no longer reported as missing a mirrored test.
+  Entry points were excluded by matching three literal paths — `src/lib.rs`,
+  `src/main.rs`, `build.rs` — so `src/bin/board_ctl.rs` fell through and was
+  asked for `tests/bin/board_ctl_tests.rs`, a mirrored test for a `fn main`.
+  `src/bin/` is where cargo looks for a package's extra binaries, so a file
+  directly under it is an entry point in the same sense `src/main.rs` is. Depth
+  is what distinguishes them: `src/bin/tool/parser.rs` is a module of a binary,
+  not a binary, and stays in scope.
+- A source root nested inside another no longer causes every file beneath it to
+  be walked, read, parsed and reported twice. `TargetRootCollector` contributes
+  each target's parent directory, so a crate with a lib and a `[[bin]]` under
+  `src/bin/` yielded both `src` and `src/bin`; the walk recurses, so everything
+  under `src/bin` was reached through both. Nested roots are now dropped.
+  Nesting is compared component-wise rather than as text, so a sibling directory
+  named `src_generated` is not mistaken for something inside `src`.
+
+Measured on a 312-function crate with two binaries: 76 reported gaps, of which
+one was a duplicate of another and one was a `fn main`.
+
 ## [0.2.0] - 2026-08-17
 
 ### Fixed

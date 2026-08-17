@@ -757,3 +757,124 @@ pub struct Point {
         report.missing
     );
 }
+
+// `src/bin/*.rs` is Cargo's location for extra binaries, so each file directly
+// under it is an entry point in exactly the sense `src/main.rs` is. Excluding
+// only the three literal paths `src/lib.rs`, `src/main.rs` and `build.rs`
+// leaves these demanding a mirrored test for a `fn main`.
+#[test]
+fn a_binary_entry_point_under_src_bin_is_ignored() {
+    // Arrange
+    let root = unique_temp_dir("src_bin_entry_point");
+    write_file(
+        &root,
+        "src/bin/board_ctl.rs",
+        r#"
+fn main() {
+    if std::env::args().count() > 1 {
+        println!("with arguments");
+    }
+}
+"#,
+    );
+
+    // Act
+    let report = analyzer()
+        .analyze_package(&package_context(&root, "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert!(
+        report.is_empty(),
+        "a binary entry point under src/bin should be ignored, got: {:?}",
+        report.missing
+    );
+}
+
+#[test]
+fn several_binary_entry_points_under_src_bin_are_all_ignored() {
+    // Arrange
+    let root = unique_temp_dir("src_bin_several_entry_points");
+    write_file(
+        &root,
+        "src/bin/first.rs",
+        r#"
+fn main() {
+    for argument in std::env::args() {
+        println!("{argument}");
+    }
+}
+"#,
+    );
+    write_file(
+        &root,
+        "src/bin/second.rs",
+        r#"
+fn main() {
+    if cfg!(debug_assertions) {
+        println!("debug");
+    }
+}
+"#,
+    );
+
+    // Act
+    let report = analyzer()
+        .analyze_package(&package_context(&root, "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert!(
+        report.is_empty(),
+        "every binary entry point under src/bin should be ignored, got: {:?}",
+        report.missing
+    );
+}
+
+// The boundary: only files directly under src/bin are entry points. A module
+// belonging to a src/bin/<name>/main.rs binary carries ordinary behaviour and
+// must stay in scope, or the fix would silently exempt a whole subtree.
+#[test]
+fn a_module_belonging_to_a_src_bin_binary_is_still_reported() {
+    // Arrange
+    let root = unique_temp_dir("src_bin_module_reported");
+    write_file(
+        &root,
+        "src/bin/tool/main.rs",
+        r#"
+fn main() {
+    println!("tool");
+}
+"#,
+    );
+    write_file(
+        &root,
+        "src/bin/tool/parser.rs",
+        r#"
+pub fn parse(input: &str) -> usize {
+    if input.is_empty() { 0 } else { input.len() }
+}
+"#,
+    );
+
+    // Act
+    let report = analyzer()
+        .analyze_package(&package_context(&root, "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert_eq!(
+        report.missing.len(),
+        1,
+        "only the parser module should be reported, got: {:?}",
+        report.missing
+    );
+    assert!(
+        report.missing[0]
+            .relative_source_file
+            .replace(std::path::MAIN_SEPARATOR, "/")
+            .ends_with("src/bin/tool/parser.rs"),
+        "expected the parser module, got: {:?}",
+        report.missing
+    );
+}

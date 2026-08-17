@@ -5,6 +5,13 @@ entry states what was actually observed, not what is suspected.
 
 ## Source roots outside `src/` are walked but can never be reported
 
+This is the *outside*-`src/` half of target-driven root discovery. The
+*inside*-`src/` half — a `[[bin]]` under `src/bin/` contributing `src/bin`
+alongside `src`, so every file beneath it was walked and reported twice — was
+fixed in 0.2.1 by dropping any root nested inside another. That fix does not
+help here: a root outside `src/` is not nested in anything, so it survives
+pruning and still cannot produce a mirror path.
+
 `TargetRootCollector` derives source roots from each production target's own
 `src_path` parent, so a `[[bin]]` declared at `path = "tools/probe.rs"`
 contributes `tools/` as a source root and `SourceWalker` duly walks it. But

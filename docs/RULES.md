@@ -55,7 +55,8 @@ view on whether the tests inside it are meaningful — see
 Per source file, in this order. The first rule that fires ends the check.
 
 1. package is `*-validation` and the file is under `src/` → ignored
-2. file is `src/lib.rs`, `src/main.rs` or `build.rs` → ignored
+2. file is an entry point — `src/lib.rs`, `src/main.rs`, `build.rs`, or a file
+   directly under `src/bin/` → ignored
 3. file is a `mod.rs` whose top-level items are all imports → ignored
 4. file is definition-only → ignored
 5. no expected test path could be derived → ignored
@@ -75,10 +76,20 @@ Applied twice, deliberately: `ManifestResolver` drops the `src` source root at
 resolution time, and `Analyzer` re-checks per file. The second check catches a
 `src/`-relative path arriving from a source root the first did not filter.
 
-### 2. Special root files
+### 2. Entry points
 
 `src/lib.rs`, `src/main.rs` and `build.rs` are ignored. They declare structure
 or bootstrap a process; neither has a meaningful mirrored subject.
+
+So is any file **directly** under `src/bin/`. That is where cargo looks for a
+package's extra binaries, so `src/bin/board_ctl.rs` is an entry point in exactly
+the sense `src/main.rs` is, and a mirrored test for its `fn main` would assert
+nothing.
+
+The depth matters. `src/bin/tool/main.rs` is an entry point too — not by this
+rule, but because `TestFileResolver` derives no path for any file named
+`main.rs`. Its sibling `src/bin/tool/parser.rs` is an ordinary module of that
+binary, carries ordinary behaviour, and stays in scope.
 
 ### 3. `mod.rs` files
 
@@ -178,6 +189,13 @@ excluded: `test`, `bench`, `example`, `custom-build`. These are included:
 
 Each surviving target contributes its source file's parent directory. A package
 whose targets yield nothing falls back to `<manifest_dir>/src`.
+
+A root that lies **inside** another is dropped, because the walk recurses and
+would otherwise reach every file beneath it twice — reading, parsing and
+reporting each one once per containing root. This is the ordinary shape of a
+crate with a `[[bin]]` under `src/bin/`, which contributes `src/bin` alongside
+the `src` its lib already contributed. Nesting is compared component-wise, so a
+sibling named `src_generated` is not mistaken for something inside `src`.
 
 > **The mirror rule assumes a `src/`-rooted layout, and source-root discovery
 > does not.** A target rooted outside `src/` — a `[[bin]]` at

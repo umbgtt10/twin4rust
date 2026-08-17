@@ -290,3 +290,68 @@ fn into_roots_returns_sorted_roots() {
     sorted.sort();
     assert_eq!(roots, sorted);
 }
+
+// A root nested inside another is redundant: SourceWalker recurses, so every
+// file under it is already reached through the outer root. Left in, each of
+// those files is walked, read and parsed twice, and reported twice.
+#[test]
+fn into_roots_drops_a_root_nested_inside_another() {
+    // Arrange
+    let library = lib_target("/p/src/lib.rs");
+    let nested_binary = bin_target("/p/src/bin/board_ctl.rs");
+
+    // Act
+    let mut collector = TargetRootCollector::new();
+    collector.collect_from_targets(&[library, nested_binary]);
+
+    // Assert
+    assert_eq!(collector.into_roots(), vec![PathBuf::from("/p/src")]);
+}
+
+#[test]
+fn into_roots_drops_a_root_nested_several_levels_deep() {
+    // Arrange
+    let library = lib_target("/p/src/lib.rs");
+    let deep_binary = bin_target("/p/src/tools/cli/entry.rs");
+
+    // Act
+    let mut collector = TargetRootCollector::new();
+    collector.collect_from_targets(&[library, deep_binary]);
+
+    // Assert
+    assert_eq!(collector.into_roots(), vec![PathBuf::from("/p/src")]);
+}
+
+#[test]
+fn into_roots_keeps_sibling_roots_that_do_not_nest() {
+    // Arrange
+    let library = lib_target("/p/src/lib.rs");
+    let outside_binary = bin_target("/p/tools/probe.rs");
+
+    // Act
+    let mut collector = TargetRootCollector::new();
+    collector.collect_from_targets(&[library, outside_binary]);
+
+    // Assert
+    assert_eq!(
+        collector.into_roots(),
+        vec![PathBuf::from("/p/src"), PathBuf::from("/p/tools")]
+    );
+}
+
+#[test]
+fn into_roots_keeps_a_root_that_only_shares_a_name_prefix() {
+    // Arrange
+    let library = lib_target("/p/src/lib.rs");
+    let lookalike = bin_target("/p/src_generated/entry.rs");
+
+    // Act
+    let mut collector = TargetRootCollector::new();
+    collector.collect_from_targets(&[library, lookalike]);
+
+    // Assert
+    assert_eq!(
+        collector.into_roots(),
+        vec![PathBuf::from("/p/src"), PathBuf::from("/p/src_generated")]
+    );
+}

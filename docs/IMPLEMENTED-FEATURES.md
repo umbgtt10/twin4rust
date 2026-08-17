@@ -5,14 +5,16 @@ This document describes the feature set currently shipped by
 [RULES.md](RULES.md); for released versions, see
 [CHANGELOG.md](../CHANGELOG.md).
 
-## Version 0.2.0
+## Version 0.2.1
 
 ### Analysis
 
 - Mirrored-path check: `src/<path>/<name>.rs` expects
   `tests/<path>/<name>_tests.rs`, at any nesting depth
 - Existence is the whole check — the expected test file is never opened
-- Exclusion of `src/lib.rs`, `src/main.rs` and `build.rs`
+- Exclusion of entry points: `src/lib.rs`, `src/main.rs`, `build.rs`, and any
+  file directly under `src/bin/`; a module nested inside a `src/bin/<name>/`
+  binary stays in scope
 - Exclusion of `mod.rs`, both via an import-only fast path and structurally,
   because no expected path is derived for that filename
 - Exclusion of definition-only files: `struct`, `enum`, `type`, `trait`,
