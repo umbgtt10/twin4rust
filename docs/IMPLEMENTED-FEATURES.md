@@ -5,7 +5,7 @@ This document describes the feature set currently shipped by
 [RULES.md](RULES.md); for released versions, see
 [CHANGELOG.md](../CHANGELOG.md).
 
-## Version 0.3.0
+## Version 0.4.0
 
 ### Analysis
 
@@ -25,7 +25,10 @@ This document describes the feature set currently shipped by
   and blanket alias impls
 - Exclusion of single-type files whose only inherent `impl` is a trivial `new`:
   no generics, returns `Self`, single struct-literal body, no branching, no
-  loops, no helper calls
+  loops, no helper calls. Any second `impl` block forfeits the exclusion — a
+  trait impl carrying a method or a second inherent impl both disqualify — and
+  so does a top-level macro invocation. Only a method-free trait impl is
+  tolerated beside the constructor
 - Exclusion of humble adapters: a single type whose inherent methods are all
   either that trivial `new` or a forwarding method — returns nothing, one
   statement, and that statement is a call. At least one must forward, so an

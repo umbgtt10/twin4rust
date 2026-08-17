@@ -165,6 +165,10 @@ impl Response {
 }
 
 #[test]
+// This asserted `result` while its name said the opposite, pinning the defect
+// rather than the rule: the second impl block carries `is_empty`, and rule 5
+// asks for exactly one inherent impl and no other top-level behaviour, so the
+// file is reported. The name was right and the assertion was not.
 fn struct_with_multiple_impl_blocks_is_not_definition_only() {
     // Arrange
     let source = r#"
@@ -181,7 +185,7 @@ impl Snapshot {
     let result = analyzer().is_definition_only_source(source).expect("parse");
 
     // Assert
-    assert!(result);
+    assert!(!result);
 }
 
 #[test]
@@ -357,4 +361,70 @@ fn mod_file_with_struct_definition_is_not_import_only() {
 
     // Assert
     assert!(!result);
+}
+
+// ---------------------------------------------------------------------------
+// A trivial constructor beside a behaviour-bearing trait impl
+//
+// The file-level view of the same defect covered in
+// trivial_constructor_detector_tests.rs. This is the shape of nearly every
+// adapter behind a seam -- hold a collaborator, implement the seam's trait --
+// and a `new` beside it must not exempt the whole file.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn is_definition_only_source_with_a_trivial_new_and_a_behaviour_bearing_trait_impl_is_not_definition_only()
+ {
+    // Arrange
+    let source = r#"
+use crate::assembly::ei_notify::EiNotify;
+
+pub struct ChannelEiNotify<const N: usize> {
+    receiver: Receiver<'static, CriticalSectionRawMutex, (), N>,
+}
+
+impl<const N: usize> ChannelEiNotify<N> {
+    pub fn new(receiver: Receiver<'static, CriticalSectionRawMutex, (), N>) -> Self {
+        Self { receiver }
+    }
+}
+
+impl<const N: usize> EiNotify for ChannelEiNotify<N> {
+    async fn receive(&self) {
+        self.receiver.receive().await
+    }
+}
+"#;
+
+    // Act
+    let result = analyzer().is_definition_only_source(source).expect("parse");
+
+    // Assert
+    assert!(!result);
+}
+
+// An empty trait impl beside the constructor keeps the exemption: rule 4 already
+// calls a method-free trait impl inert, and rule 5 must agree with it.
+#[test]
+fn is_definition_only_source_with_a_trivial_new_and_an_empty_trait_impl_is_definition_only() {
+    // Arrange
+    let source = r#"
+pub struct Marker {
+    value: u32,
+}
+
+impl Marker {
+    pub fn new(value: u32) -> Self {
+        Self { value }
+    }
+}
+
+impl Send for Marker {}
+"#;
+
+    // Act
+    let result = analyzer().is_definition_only_source(source).expect("parse");
+
+    // Assert
+    assert!(result);
 }

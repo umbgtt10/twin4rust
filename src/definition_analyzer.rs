@@ -6,15 +6,20 @@ use anyhow::{Context, Result};
 use quote::ToTokens;
 use syn::{Attribute, File, Item, ItemImpl, ItemMod, parse_file};
 
+use crate::behaviourless_impl_detector::BehaviourlessImplDetector;
 use crate::humble_adapter_detector::HumbleAdapterDetector;
 use crate::trivial_constructor_detector::TrivialConstructorDetector;
 
 #[derive(Default)]
-pub struct DefinitionAnalyzer;
+pub struct DefinitionAnalyzer {
+    behaviourless_impl_detector: BehaviourlessImplDetector,
+}
 
 impl DefinitionAnalyzer {
     pub fn new() -> Self {
-        Self
+        Self {
+            behaviourless_impl_detector: BehaviourlessImplDetector::new(),
+        }
     }
 
     pub fn is_definition_only_source(&self, source: &str) -> Result<bool> {
@@ -68,24 +73,8 @@ impl DefinitionAnalyzer {
                     | Item::Enum(_)
                     | Item::Type(_)
                     | Item::Trait(_)
-            ) || Self::is_behaviourless_impl(item)
+            ) || self.behaviourless_impl_detector.is_behaviourless_impl(item)
         })
-    }
-
-    // `impl Marker for T {}` and `impl<T> Alias for T where ...` introduce no
-    // executable behaviour, so a mirrored test could only restate the compiler.
-    // Only an impl that carries a method is worth a test.
-    fn is_behaviourless_impl(item: &Item) -> bool {
-        match item {
-            Item::Impl(item) => {
-                item.trait_.is_some()
-                    && !item
-                        .items
-                        .iter()
-                        .any(|member| matches!(member, syn::ImplItem::Fn(_)))
-            }
-            _ => false,
-        }
     }
 
     // A file must declare at least one inert thing to count as definition-only.

@@ -44,6 +44,8 @@ gaps and exits `1`.
 | `Analyzer` | `analyzer.rs` | applies the exclusion rules and collects gaps |
 | `DefinitionAnalyzer` | `definition_analyzer.rs` | `syn` classification: definition-only, import-only `mod.rs`, `#[cfg(test)]` stripping |
 | `TrivialConstructorDetector` | `trivial_constructor_detector.rs` | the single-type-plus-trivial-`new` rule |
+| `HumbleAdapterDetector` | `humble_adapter_detector.rs` | the same rule one method further along: forwarding methods |
+| `BehaviourlessImplDetector` | `behaviourless_impl_detector.rs` | whether one `impl` block carries executable behaviour |
 | `TestFileResolver` | `test_file_resolver.rs` | `src/<path>/<name>.rs` → `tests/<path>/<name>_tests.rs` |
 | `ReportPrinter` | `report_printer.rs` | renders the report, sorted and stable |
 
@@ -58,6 +60,21 @@ gaps and exits `1`.
 All three are plain data. `AnalysisReport::is_empty` is what `Runner` folds
 over to decide the exit code, and what `ReportPrinter` counts for
 `packages_with_gaps`.
+
+## Why the behaviourless-impl question is its own type
+
+Both the definition-only rule and the trivial-constructor rule need to know
+whether an `impl` block carries a method, and only the first of them used to
+have the answer. The second admitted `Item::Impl(_)` outright, so a file holding
+a trivial `new` was exempt whatever else its impls did — the shape of every
+adapter behind a seam. Sharing one detector is what makes the two rules agree on
+the same definition of behaviour rather than each carrying its own.
+
+The definition is asymmetric on purpose: a *trait* impl with no methods is
+behaviourless, an *inherent* impl is not, even when empty. An inherent impl is
+the block the trivial-constructor and humble-adapter rules count, and calling an
+empty one inert would let them admit a second one while still claiming the file
+holds exactly one.
 
 ## Analysis is AST-structural
 

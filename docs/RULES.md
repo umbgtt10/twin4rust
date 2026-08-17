@@ -146,6 +146,40 @@ A file is also excluded when it holds:
 
 Pure data holders exposing only a trivial constructor do not earn a test file.
 
+Condition 2 is the one that does the work, and *any* second `impl` block
+violates it — a trait impl carrying a method, or a second inherent impl, both
+disqualify the file however trivial the `new` beside them is. The single
+exception is a trait impl carrying **no** methods, which rule 4 above already
+calls inert; that one is tolerated so the two rules agree on what behaviour
+means. A top-level macro invocation disqualifies here for the same reason it
+does under rule 4.
+
+This matters more than it looks, because a trivial constructor plus a
+behaviour-bearing trait impl is the shape of nearly every adapter behind a seam:
+
+```rust
+pub struct ChannelEiNotify<const N: usize> {
+    receiver: Receiver<'static, CriticalSectionRawMutex, (), N>,
+}
+
+impl<const N: usize> ChannelEiNotify<N> {
+    pub fn new(receiver: Receiver<'static, CriticalSectionRawMutex, (), N>) -> Self {
+        Self { receiver }
+    }
+}
+
+impl<const N: usize> EiNotify for ChannelEiNotify<N> {
+    async fn receive(&self) {
+        self.receiver.receive().await
+    }
+}
+```
+
+The `new` holds. The trait impl is where the behaviour is, and it is reported.
+Whether such a file *deserves* a mirror is rule 6's question, not this one — and
+rule 6 asks it of the forwarding method itself rather than of the constructor
+standing next to it.
+
 ```rust
 pub struct PeerRecoveryStatus {
     pub height: Height,

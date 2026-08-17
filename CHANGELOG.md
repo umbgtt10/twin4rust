@@ -6,6 +6,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-17
+
+A false negative closed, so files that passed yesterday are reported today. That
+is a behaviour change rather than a fix to an error path, hence a minor.
+
+### Fixed
+
+- **A trivial `new` no longer exempts a file from whatever else its `impl` blocks
+  do.** The trivial-constructor rule waved every `Item::Impl` through as an
+  allowed neighbour, so a file holding one trivial-`new`-only impl was excluded
+  no matter what sat beside it — a trait impl with three methods, a second
+  inherent impl with real logic, or a top-level macro invocation. Rule 5 has
+  always asked for "exactly one inherent `impl` block" and "no other top-level
+  behaviour", and the documented "what stays in scope" list has always named "a
+  trait impl that carries at least one method" as reported. Only the code
+  disagreed.
+
+  This is the shape of nearly every adapter behind a seam: hold a collaborator in
+  a `new`, implement the seam's trait, put the behaviour in the trait impl. Such
+  files were silently exempt. The rule now admits exactly the constructor impl
+  plus method-free trait impls, which rule 4 already calls inert.
+
+  Three existing tests looked like they covered this and did not.
+  `struct_with_trait_impl_returns_false`,
+  `struct_with_multiple_impls_returns_false` and
+  `impl_on_wrong_target_name_returns_false` all pass for an unrelated reason —
+  none contains a `new` whose body is a struct-construction expression, so the
+  constructor count never reaches one and the file is rejected before the extra
+  impl is weighed. A fourth,
+  `struct_with_multiple_impl_blocks_is_not_definition_only`, asserted the
+  opposite of what its own name said and pinned the defect; its assertion is now
+  what the name always claimed.
+
+### Added
+
+- `BehaviourlessImplDetector`, holding the one question both the definition-only
+  rule and the trivial-constructor rule need answered: does this `impl` block
+  carry a method? It was private to `DefinitionAnalyzer`, which is why the other
+  rule had no way to ask it. The definition is asymmetric on purpose — a trait
+  impl with no methods is behaviourless, an inherent impl is not even when empty,
+  because an inherent impl is the block the counting rules count.
+
 ## [0.3.0] - 2026-08-17
 
 A new exclusion, so a minor rather than a patch: files that were reported

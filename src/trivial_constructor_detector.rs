@@ -4,12 +4,18 @@
 
 use syn::{Expr, ImplItem, ImplItemFn, Item, ItemImpl, Stmt, Type};
 
+use crate::behaviourless_impl_detector::BehaviourlessImplDetector;
+
 #[derive(Default)]
-pub struct TrivialConstructorDetector;
+pub struct TrivialConstructorDetector {
+    behaviourless_impl_detector: BehaviourlessImplDetector,
+}
 
 impl TrivialConstructorDetector {
     pub fn new() -> Self {
-        Self
+        Self {
+            behaviourless_impl_detector: BehaviourlessImplDetector::new(),
+        }
     }
 
     pub fn file_has_trivial_constructor(&self, items: &[&Item]) -> bool {
@@ -135,6 +141,15 @@ impl TrivialConstructorDetector {
         Some(())
     }
 
+    // Every impl block other than the single trivial constructor must earn its
+    // way past this, because rule 5 asks for exactly one inherent impl and no
+    // other top-level behaviour. Admitting `Item::Impl(_)` outright granted the
+    // exemption to any file holding a trivial `new`, whatever else its impls
+    // did -- which is the shape of every adapter behind a seam.
+    //
+    // `Item::Macro` and `Item::Verbatim` are absent for the reason they are
+    // absent from the other two detectors: an unexpanded macro says nothing
+    // about the behaviour it expands to, so one keeps the file in scope.
     fn is_allowed_item(&self, item: &Item) -> bool {
         matches!(
             item,
@@ -143,13 +158,10 @@ impl TrivialConstructorDetector {
                 | Item::Mod(syn::ItemMod { content: None, .. })
                 | Item::Const(_)
                 | Item::Static(_)
-                | Item::Macro(_)
-                | Item::Verbatim(_)
                 | Item::Type(_)
                 | Item::Trait(_)
                 | Item::Struct(_)
                 | Item::Enum(_)
-                | Item::Impl(_)
-        )
+        ) || self.behaviourless_impl_detector.is_behaviourless_impl(item)
     }
 }
