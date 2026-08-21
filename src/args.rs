@@ -20,10 +20,6 @@ pub struct Args {
 }
 
 impl Args {
-    pub fn parse_args() -> Self {
-        Self::parse_from(Self::without_cargo_subcommand(std::env::args()))
-    }
-
     /// Cargo invokes `cargo twin4rust` as `cargo-twin4rust twin4rust ...`, so the
     /// subcommand name arrives as an extra leading argument that clap would
     /// otherwise reject. Running the binary directly does not repeat it.

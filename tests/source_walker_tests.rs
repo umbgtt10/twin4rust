@@ -2,10 +2,10 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
+use std::env::temp_dir;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
-
 use twin4rust::source_walker::SourceWalker;
 
 fn unique_temp_dir(label: &str) -> PathBuf {
@@ -14,7 +14,7 @@ fn unique_temp_dir(label: &str) -> PathBuf {
         .expect("system clock before unix epoch")
         .as_nanos();
 
-    let dir = std::env::temp_dir().join(format!("gap_source_walker_{label}_{nanos}"));
+    let dir = temp_dir().join(format!("gap_source_walker_{label}_{nanos}"));
     fs::create_dir_all(&dir).expect("failed to create temp dir");
     dir
 }
@@ -37,20 +37,6 @@ fn walk_empty_directory_returns_empty() {
 
     // Assert
     assert!(files.is_empty());
-}
-
-#[test]
-fn walk_single_rs_file_returns_that_file() {
-    // Arrange
-    let root = unique_temp_dir("single_rs");
-    write_file(&root, "src/lib.rs", "pub fn foo() {}");
-
-    // Act
-    let files = SourceWalker::walk(&root);
-
-    // Assert
-    assert_eq!(files.len(), 1);
-    assert!(files[0].ends_with("lib.rs"));
 }
 
 #[test]
@@ -114,4 +100,18 @@ fn walk_non_existent_directory_returns_empty() {
 
     // Assert
     assert!(files.is_empty());
+}
+
+#[test]
+fn walk_single_rs_file_returns_that_file() {
+    // Arrange
+    let root = unique_temp_dir("single_rs");
+    write_file(&root, "src/lib.rs", "pub fn foo() {}");
+
+    // Act
+    let files = SourceWalker::walk(&root);
+
+    // Assert
+    assert_eq!(files.len(), 1);
+    assert!(files[0].ends_with("lib.rs"));
 }

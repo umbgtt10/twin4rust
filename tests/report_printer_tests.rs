@@ -2,6 +2,8 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
+use std::panic::AssertUnwindSafe;
+use std::panic::catch_unwind;
 use twin4rust::analysis_report::AnalysisReport;
 use twin4rust::missing_test_gap::MissingTestGap;
 use twin4rust::report_printer::ReportPrinter;
@@ -13,20 +15,7 @@ fn print_empty_reports_does_not_panic() {
     let printer = ReportPrinter::new();
 
     // Act & Assert
-    let output = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        printer.print(&reports);
-    }));
-    assert!(output.is_ok());
-}
-
-#[test]
-fn print_reports_with_no_gaps_does_not_panic() {
-    // Arrange
-    let reports = vec![AnalysisReport::new("pkg".to_string(), vec![])];
-    let printer = ReportPrinter::new();
-
-    // Act & Assert
-    let output = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    let output = catch_unwind(AssertUnwindSafe(|| {
         printer.print(&reports);
     }));
     assert!(output.is_ok());
@@ -44,7 +33,7 @@ fn print_reports_with_missing_gaps_does_not_panic() {
     let printer = ReportPrinter::new();
 
     // Act & Assert
-    let output = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    let output = catch_unwind(AssertUnwindSafe(|| {
         printer.print(&reports);
     }));
     assert!(output.is_ok());
@@ -77,7 +66,20 @@ fn print_reports_with_multiple_packages_and_gaps_does_not_panic() {
     let printer = ReportPrinter::new();
 
     // Act & Assert
-    let output = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+    let output = catch_unwind(AssertUnwindSafe(|| {
+        printer.print(&reports);
+    }));
+    assert!(output.is_ok());
+}
+
+#[test]
+fn print_reports_with_no_gaps_does_not_panic() {
+    // Arrange
+    let reports = vec![AnalysisReport::new("pkg".to_string(), vec![])];
+    let printer = ReportPrinter::new();
+
+    // Act & Assert
+    let output = catch_unwind(AssertUnwindSafe(|| {
         printer.print(&reports);
     }));
     assert!(output.is_ok());

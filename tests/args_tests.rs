@@ -6,6 +6,27 @@ use clap::Parser;
 use twin4rust::args::Args;
 
 #[test]
+fn parse_args_all_options() {
+    // Arrange & Act
+    let args = Args::parse_from([
+        "cargo-twin4rust",
+        "--manifest-path",
+        "my/Cargo.toml",
+        "--package",
+        "pkg_a",
+        "--package",
+        "pkg_b",
+    ]);
+
+    // Assert
+    assert_eq!(
+        args.manifest_path.unwrap().to_string_lossy(),
+        "my/Cargo.toml"
+    );
+    assert_eq!(args.packages, vec!["pkg_a", "pkg_b"]);
+}
+
+#[test]
 fn parse_args_defaults() {
     // Arrange & Act
     let args = Args::parse_from(["cargo-twin4rust"]);
@@ -22,15 +43,6 @@ fn parse_args_manifest_path() {
 
     // Assert
     assert_eq!(args.manifest_path.unwrap().to_string_lossy(), "Cargo.toml");
-}
-
-#[test]
-fn parse_args_single_package() {
-    // Arrange & Act
-    let args = Args::parse_from(["cargo-twin4rust", "--package", "foo"]);
-
-    // Assert
-    assert_eq!(args.packages, vec!["foo"]);
 }
 
 #[test]
@@ -51,6 +63,15 @@ fn parse_args_multiple_packages() {
 }
 
 #[test]
+fn parse_args_single_package() {
+    // Arrange & Act
+    let args = Args::parse_from(["cargo-twin4rust", "--package", "foo"]);
+
+    // Assert
+    assert_eq!(args.packages, vec!["foo"]);
+}
+
+#[test]
 fn without_cargo_subcommand_drops_the_name_cargo_inserts() {
     // Arrange -- `cargo twin4rust --package foo` reaches the binary as
     // `cargo-twin4rust twin4rust --package foo`. Leaving that second argument in
@@ -65,16 +86,16 @@ fn without_cargo_subcommand_drops_the_name_cargo_inserts() {
 }
 
 #[test]
-fn without_cargo_subcommand_leaves_a_direct_invocation_untouched() {
-    // Arrange -- run straight from target/release the name is not repeated.
-    // Stripping unconditionally would eat the user's first real argument.
-    let raw = ["cargo-twin4rust", "--package", "foo"].map(String::from);
+fn without_cargo_subcommand_handles_being_given_nothing() {
+    // Arrange -- an empty argv has no element 1 to inspect. Indexing it would
+    // panic before the process ever reached clap.
+    let raw: [String; 0] = [];
 
     // Act
     let forwarded = Args::without_cargo_subcommand(raw);
 
     // Assert
-    assert_eq!(forwarded, vec!["cargo-twin4rust", "--package", "foo"]);
+    assert!(forwarded.is_empty());
 }
 
 #[test]
@@ -92,35 +113,14 @@ fn without_cargo_subcommand_keeps_a_package_that_happens_to_be_named_twin4rust()
 }
 
 #[test]
-fn without_cargo_subcommand_handles_being_given_nothing() {
-    // Arrange -- an empty argv has no element 1 to inspect. Indexing it would
-    // panic before the process ever reached clap.
-    let raw: [String; 0] = [];
+fn without_cargo_subcommand_leaves_a_direct_invocation_untouched() {
+    // Arrange -- run straight from target/release the name is not repeated.
+    // Stripping unconditionally would eat the user's first real argument.
+    let raw = ["cargo-twin4rust", "--package", "foo"].map(String::from);
 
     // Act
     let forwarded = Args::without_cargo_subcommand(raw);
 
     // Assert
-    assert!(forwarded.is_empty());
-}
-
-#[test]
-fn parse_args_all_options() {
-    // Arrange & Act
-    let args = Args::parse_from([
-        "cargo-twin4rust",
-        "--manifest-path",
-        "my/Cargo.toml",
-        "--package",
-        "pkg_a",
-        "--package",
-        "pkg_b",
-    ]);
-
-    // Assert
-    assert_eq!(
-        args.manifest_path.unwrap().to_string_lossy(),
-        "my/Cargo.toml"
-    );
-    assert_eq!(args.packages, vec!["pkg_a", "pkg_b"]);
+    assert_eq!(forwarded, vec!["cargo-twin4rust", "--package", "foo"]);
 }

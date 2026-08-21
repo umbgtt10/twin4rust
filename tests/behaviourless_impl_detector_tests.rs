@@ -9,16 +9,28 @@
 // strength of holding a `new`.
 
 use syn::Item;
-
+use syn::parse_file;
 use twin4rust::behaviourless_impl_detector::BehaviourlessImplDetector;
-
-fn parse_first_item(source: &str) -> Item {
-    let file = syn::parse_file(source).expect("valid source");
-    file.items.into_iter().next().expect("one item")
-}
 
 fn detector() -> BehaviourlessImplDetector {
     BehaviourlessImplDetector::new()
+}
+
+fn parse_first_item(source: &str) -> Item {
+    let file = parse_file(source).expect("valid source");
+    file.items.into_iter().next().expect("one item")
+}
+
+#[test]
+fn is_behaviourless_impl_of_a_blanket_trait_impl_with_a_where_clause_returns_true() {
+    // Arrange
+    let item = parse_first_item("impl<T> Alias for T where T: Send {}");
+
+    // Act
+    let result = detector().is_behaviourless_impl(&item);
+
+    // Assert
+    assert!(result);
 }
 
 #[test]
@@ -34,36 +46,15 @@ fn is_behaviourless_impl_of_a_marker_trait_impl_returns_true() {
 }
 
 #[test]
-fn is_behaviourless_impl_of_a_blanket_trait_impl_with_a_where_clause_returns_true() {
+fn is_behaviourless_impl_of_a_trait_definition_returns_false() {
     // Arrange
-    let item = parse_first_item("impl<T> Alias for T where T: Send {}");
+    let item = parse_first_item("pub trait Marker {}");
 
     // Act
     let result = detector().is_behaviourless_impl(&item);
 
     // Assert
-    assert!(result);
-}
-
-// An associated type or const is a definition, not a body, so an impl holding
-// nothing else still has nothing to call.
-#[test]
-fn is_behaviourless_impl_of_a_trait_impl_with_only_associated_items_returns_true() {
-    // Arrange
-    let item = parse_first_item(
-        r#"
-impl Storage for Disk {
-    type Key = u64;
-    const LIMIT: usize = 8;
-}
-"#,
-    );
-
-    // Act
-    let result = detector().is_behaviourless_impl(&item);
-
-    // Assert
-    assert!(result);
+    assert!(!result);
 }
 
 #[test]
@@ -109,6 +100,27 @@ impl Storage for Disk {
     assert!(!result);
 }
 
+// An associated type or const is a definition, not a body, so an impl holding
+// nothing else still has nothing to call.
+#[test]
+fn is_behaviourless_impl_of_a_trait_impl_with_only_associated_items_returns_true() {
+    // Arrange
+    let item = parse_first_item(
+        r#"
+impl Storage for Disk {
+    type Key = u64;
+    const LIMIT: usize = 8;
+}
+"#,
+    );
+
+    // Act
+    let result = detector().is_behaviourless_impl(&item);
+
+    // Assert
+    assert!(result);
+}
+
 // The deliberate asymmetry. An inherent impl is the block the trivial-constructor
 // and humble-adapter rules count, so calling an empty one inert would let those
 // rules admit a second one and still claim the file holds exactly one.
@@ -148,18 +160,6 @@ impl Wrapper {
 fn is_behaviourless_impl_of_an_item_that_is_not_an_impl_returns_false() {
     // Arrange
     let item = parse_first_item("pub struct Wrapper { value: u32 }");
-
-    // Act
-    let result = detector().is_behaviourless_impl(&item);
-
-    // Assert
-    assert!(!result);
-}
-
-#[test]
-fn is_behaviourless_impl_of_a_trait_definition_returns_false() {
-    // Arrange
-    let item = parse_first_item("pub trait Marker {}");
 
     // Act
     let result = detector().is_behaviourless_impl(&item);
