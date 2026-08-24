@@ -6,6 +6,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-24
+
+How the gates are run, and where the crate lives. No rule changed, so nothing
+this tool reports about your code moves. Minor rather than patch because the
+published crate moved to `core/` and the repository became a workspace.
+
+### Added
+- `xtask/`, a real crate replacing the stage 2 PowerShell script. Each of the
+  four gates is a `Gate` implementation constructed against a `CommandRunner`
+  trait, so the argument lists and failure messages are covered by 67
+  integration tests rather than being unobservable shell. It is a workspace
+  member and the house rules cover it -- the crate that runs the gates is not
+  exempt from them.
+- `.github/workflows/ci.yml`: both stages on Ubuntu, Windows and macOS, for
+  every pull request and every push to `main`. CI runs `just stage1` /
+  `just stage2` -- the same two commands a developer runs -- so there is no
+  second definition of the gates to drift out of step.
+
+### Changed
+- Gates run through `just stage1` / `just stage2` on all three platforms.
+- **The repository is a workspace: `core/` holds the published crate, `xtask/`
+  runs the gates.** The split is load-bearing rather than tidy-minded. While the
+  crate sat at the repository root, its package directory *was* the repository
+  root, so `cargo stern4rust` walked `xtask/tests/**` and reported 78 offences
+  for test functions "in the source tree" -- files belonging to a different
+  package entirely. `--package` does not narrow it, because the scope is the
+  directory. Giving each crate its own directory took that to zero.
+
+  The published crate is unaffected: same name, same lib name, same binary, and
+  `cargo package` still verifies.
+- The self-analysis gate passes `--package` to the tool. The workspace root is a
+  virtual manifest, which names no single package, so the tool refuses to guess
+  and exits asking for one. Two flags that look alike now sit either side of the
+  `--`: cargo gets `--bin` to choose what to build, the tool gets `--package` to
+  choose what to analyse.
+- CI checks formatting instead of applying it (`cargo fmt --check` when `CI` is
+  set), so drift fails the build rather than being silently rewritten where
+  nobody is there to review it. A local `just stage1` still formats in place.
+
+### Removed
+- `scripts/run_stage_1.ps1` and `scripts/run_stage_2.ps1`. A Windows-only gate
+  is not a gate contributors on Linux or macOS can run.
+
 ## [0.4.0] - 2026-08-17
 
 A false negative closed, so files that passed yesterday are reported today. That

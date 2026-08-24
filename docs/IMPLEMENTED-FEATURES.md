@@ -69,6 +69,7 @@ This document describes the feature set currently shipped by
 ### Project
 
 - `docs/RULES.md`, `docs/ARCHITECTURE.md`, `docs/ADRs/`, `CLAUDE.md`
-- `scripts/run_stage_1.ps1` (fmt, clippy, tests) and `scripts/run_stage_2.ps1`
-  (CRAP gate plus mirrored-test self-analysis)
+- `just stage1` (fmt, clippy, tests) and `just stage2` (`cargo xtask stage2`:
+  house rules, CRAP gate, mirrored-test self-analysis, file risk), both running
+  the same on Windows, Linux and macOS and both run by CI
 - Test files named to mirror their subject, so the tool passes its own gate

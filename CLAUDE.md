@@ -30,17 +30,26 @@ That means:
 
 ## Quality Gates
 
-### Mandatory after every change to `src/` or `tests/`
+### Mandatory after every change to `core/src/` or `core/tests/`
 
 Run gates:
 
-`powershell -File scripts\run_stage_1.ps1`
-`powershell -File scripts\run_stage_2.ps1`
+`just stage1`
+`just stage2`
 
 If either gate is not green, the work is not complete.
 
+Both run identically on Windows, Linux and macOS, and CI runs the same two
+commands -- there is no second definition of the gates to drift out of step.
+
 Stage 1 is formatting, clippy and tests -- cargo built-ins only, so it works on
-a fresh checkout. Stage 2 is four gates, run in this order:
+a fresh checkout with none of the house tools installed.
+
+Stage 2 is `cargo xtask stage2` -- a real crate under `xtask/`, gated like any
+other code, rather than a script. Each gate is a `Gate` implementation
+constructed against a `CommandRunner` trait, so the argument lists and the
+failure messages are covered by `xtask`'s own integration tests. It runs four
+gates, in this order:
 
 | gate | asks |
 |---|---|
@@ -58,9 +67,27 @@ unconfigured. `docs/header.txt` holds the three-line header every `.rs` file
 carries and `stern4rust.toml` names it -- in the config rather than the gate
 script, so a hand-run of `cargo stern4rust` checks exactly what the gate checks.
 
+The stern gate is scoped to `cargo-twin4rust` **and** `xtask`. The crate that
+runs the gates is not exempt from them.
+
+`cargo install just`
+`cargo install cargo-llvm-cov`
 `cargo install cargo-stern4rust`
 `cargo install cargo-crap4rust`
 `cargo install cargo-iceberg4rust`
+
+cargo-twin4rust is deliberately not in that list. The self-analysis gate builds
+it from this checkout, so the tree being checked is the tree being changed.
+
+## Layout
+
+The repository is a workspace: `core/` is the published crate and `xtask/` runs
+the gates. That split is load-bearing rather than tidy-minded. While the crate
+sat at the repository root, its package directory *was* the repository root, so
+`cargo stern4rust` walked `xtask/tests/**` and reported 78 offences for test
+functions "in the source tree" -- files belonging to a different package
+entirely. Scoping with `--package` does not help, because the scope is the
+directory. Giving each crate its own directory is what separates them.
 
 The twin4rust gate runs this tool against itself. A tool that enforces a rule it
 does not satisfy is not worth installing, so every behaviour-bearing source file

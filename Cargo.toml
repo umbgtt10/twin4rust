@@ -1,31 +1,27 @@
-[package]
-name = "cargo-twin4rust"
-version = "0.4.0"
+# A virtual workspace rather than a package at the root. `core/` is the
+# published crate and `xtask/` runs the gates.
+#
+# The split is not cosmetic. While the crate sat at the repository root, its
+# package directory *was* the repository root, so `cargo stern4rust` walked
+# `xtask/tests/**` and reported 78 offences for test functions "in the source
+# tree" -- test files belonging to a different package entirely. Scoping by
+# `--package` does not help, because the scope is the directory. Giving each
+# crate its own directory is what separates them.
+[workspace]
+members = ["core", "xtask"]
+resolver = "3"
+
+# Declared once here; every member takes them with `.workspace = true`, so a
+# version is bumped in one place and no two members can disagree.
+[workspace.package]
+version = "0.5.0"
 edition = "2024"
 rust-version = "1.85"
 authors = ["Umberto Gotti <umberto.gotti@umbertogotti.dev>"]
-description = "Cargo subcommand that fails the build when a Rust source file has no mirrored test file beside it"
 license = "MIT"
-readme = "README.md"
 repository = "https://github.com/umbgtt10/twin4rust"
-documentation = "https://docs.rs/cargo-twin4rust"
-keywords = ["cargo", "subcommand", "testing", "coverage", "cli"]
-categories = ["development-tools::cargo-plugins", "development-tools::testing", "command-line-utilities"]
 
-autotests = false
-
-[lib]
-name = "twin4rust"
-
-[[bin]]
-name = "cargo-twin4rust"
-path = "src/main.rs"
-
-[[test]]
-name = "all_tests"
-path = "tests/all_tests.rs"
-
-[dependencies]
+[workspace.dependencies]
 anyhow = "1.0.98"
 cargo_metadata = "0.23.1"
 clap = { version = "4.6.0", features = ["derive"] }
@@ -34,8 +30,3 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 syn = { version = "2.0.117", features = ["full", "visit"] }
 walkdir = "2.5.0"
-
-[dev-dependencies]
-clap = { version = "4.6.0", features = ["derive"] }
-serde_json = "1.0"
-syn = { version = "2.0.117", features = ["full", "visit"] }
