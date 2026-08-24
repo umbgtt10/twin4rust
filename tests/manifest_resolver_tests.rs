@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 use cargo_metadata::Metadata;
+use cargo_metadata::Target;
 use serde_json::from_value;
 use std::path::Path;
 use std::path::PathBuf;
@@ -10,7 +11,7 @@ use twin4rust::config::Config;
 use twin4rust::manifest_resolver::ManifestResolver;
 use twin4rust::target_root_collector::TargetRootCollector;
 
-fn bench_target(src_path: &str) -> cargo_metadata::Target {
+fn bench_target(src_path: &str) -> Target {
     from_value(serde_json::json!({
         "name": "bench_heavy",
         "kind": ["bench"],
@@ -24,7 +25,7 @@ fn bench_target(src_path: &str) -> cargo_metadata::Target {
     .expect("valid Target")
 }
 
-fn bin_target(src_path: &str) -> cargo_metadata::Target {
+fn bin_target(src_path: &str) -> Target {
     from_value(serde_json::json!({
         "name": "my_bin",
         "kind": ["bin"],
@@ -38,7 +39,7 @@ fn bin_target(src_path: &str) -> cargo_metadata::Target {
     .expect("valid Target")
 }
 
-fn build_target(src_path: &str) -> cargo_metadata::Target {
+fn build_target(src_path: &str) -> Target {
     from_value(serde_json::json!({
         "name": "build_script",
         "kind": ["custom-build"],
@@ -52,7 +53,7 @@ fn build_target(src_path: &str) -> cargo_metadata::Target {
     .expect("valid Target")
 }
 
-fn example_target(src_path: &str) -> cargo_metadata::Target {
+fn example_target(src_path: &str) -> Target {
     from_value(serde_json::json!({
         "name": "example_demo",
         "kind": ["example"],
@@ -66,7 +67,7 @@ fn example_target(src_path: &str) -> cargo_metadata::Target {
     .expect("valid Target")
 }
 
-fn lib_target(src_path: &str) -> cargo_metadata::Target {
+fn lib_target(src_path: &str) -> Target {
     from_value(serde_json::json!({
         "name": "my_crate",
         "kind": ["lib"],
@@ -132,7 +133,7 @@ fn metadata_with_package(name: &str, root_id: Option<&str>) -> Metadata {
     .expect("valid Metadata")
 }
 
-fn test_target(src_path: &str) -> cargo_metadata::Target {
+fn test_target(src_path: &str) -> Target {
     from_value(serde_json::json!({
         "name": "test_integration",
         "kind": ["test"],
