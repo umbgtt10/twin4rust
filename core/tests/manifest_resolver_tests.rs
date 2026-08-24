@@ -232,14 +232,19 @@ fn relative_file_inside_base_dir_strips_prefix() {
     assert_eq!(relative, "src/lib.rs");
 }
 
+// Built with `join` rather than written as a literal `C:\Users\...`. Windows
+// reads that literal as a path and Unix reads it as one filename, so the
+// prefix strips on one platform and not on the other, and the test passes for
+// the wrong reason. Joining leaves a backslash inside the relative portion on
+// both, which is the thing being normalized.
 #[test]
 fn relative_file_normalizes_backslashes_to_forward_slashes() {
     // Arrange
-    let base_dir = Path::new("C:\\Users\\user\\project");
-    let file_path = Path::new("C:\\Users\\user\\project\\src\\lib.rs");
+    let base_dir = Path::new("project");
+    let file_path = base_dir.join("src\\lib.rs");
 
     // Act
-    let relative = ManifestResolver::relative_file(base_dir, file_path);
+    let relative = ManifestResolver::relative_file(base_dir, &file_path);
 
     // Assert
     assert_eq!(relative, "src/lib.rs");
