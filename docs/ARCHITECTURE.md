@@ -56,10 +56,14 @@ gaps and exits `1`.
 | `PackageContext` | one resolved package | name, manifest dir, source roots |
 | `MissingTestGap` | one reported file | package name, relative source file, expected test file |
 | `AnalysisReport` | one analyzed package | package name plus its `Vec<MissingTestGap>` |
+| `ConstructorScanState` | one trivial-constructor scan | the one type seen so far, and how many trivial-`new` impls name it |
 
-All three are plain data. `AnalysisReport::is_empty` is what `Runner` folds
+All four are plain data. `AnalysisReport::is_empty` is what `Runner` folds
 over to decide the exit code, and what `ReportPrinter` counts for
-`packages_with_gaps`.
+`packages_with_gaps`. `ConstructorScanState` is what
+`TrivialConstructorDetector` threads through its walk over a file's items, each
+step handing back the updated state rather than writing it through a `&mut`
+parameter.
 
 ## Why the behaviourless-impl question is its own type
 

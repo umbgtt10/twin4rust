@@ -5,6 +5,7 @@
 use syn::{Expr, ImplItem, ImplItemFn, Item, ItemImpl, Stmt, Type};
 
 use crate::behaviourless_impl_detector::BehaviourlessImplDetector;
+use crate::constructor_scan_state::ConstructorScanState;
 
 #[derive(Default)]
 pub struct TrivialConstructorDetector {
@@ -19,34 +20,36 @@ impl TrivialConstructorDetector {
     }
 
     pub fn file_has_trivial_constructor(&self, items: &[&Item]) -> bool {
-        let mut type_name: Option<String> = None;
-        let mut constructor_impl_count = 0;
+        let mut state = ConstructorScanState {
+            type_name: None,
+            constructor_impl_count: 0,
+        };
 
         for item in items {
-            if !self.process_item(item, &mut type_name, &mut constructor_impl_count) {
-                return false;
+            match self.process_item(item, state) {
+                Some(updated) => state = updated,
+                None => return false,
             }
         }
 
-        type_name.is_some() && constructor_impl_count == 1
+        state.type_name.is_some() && state.constructor_impl_count == 1
     }
 
     fn process_item(
         &self,
         item: &Item,
-        type_name: &mut Option<String>,
-        constructor_impl_count: &mut usize,
-    ) -> bool {
-        if !self.try_track_type(item, type_name) {
-            return false;
+        state: ConstructorScanState,
+    ) -> Option<ConstructorScanState> {
+        let state = self.try_track_type(item, state)?;
+        let (state, constructor_matched) = self.try_track_constructor(item, state);
+        if constructor_matched.is_some() {
+            return Some(state);
         }
-        if self
-            .try_track_constructor(item, type_name, constructor_impl_count)
-            .is_some()
-        {
-            return true;
+        if self.is_allowed_item(item) {
+            Some(state)
+        } else {
+            None
         }
-        self.is_allowed_item(item)
     }
 
     pub fn impl_is_trivial_constructor_only(
@@ -102,43 +105,62 @@ impl TrivialConstructorDetector {
             && matches!(&method.block.stmts[0], Stmt::Expr(Expr::Struct(_), _))
     }
 
-    fn try_track_type(&self, item: &Item, type_name: &mut Option<String>) -> bool {
+    fn try_track_type(
+        &self,
+        item: &Item,
+        state: ConstructorScanState,
+    ) -> Option<ConstructorScanState> {
         match item {
             Item::Struct(item_struct) => {
-                if type_name.is_some() {
-                    return false;
+                if state.type_name.is_some() {
+                    return None;
                 }
-                *type_name = Some(item_struct.ident.to_string());
+                Some(ConstructorScanState {
+                    type_name: Some(item_struct.ident.to_string()),
+                    constructor_impl_count: state.constructor_impl_count,
+                })
             }
             Item::Enum(item_enum) => {
-                if type_name.is_some() {
-                    return false;
+                if state.type_name.is_some() {
+                    return None;
                 }
-                *type_name = Some(item_enum.ident.to_string());
+                Some(ConstructorScanState {
+                    type_name: Some(item_enum.ident.to_string()),
+                    constructor_impl_count: state.constructor_impl_count,
+                })
             }
-            _ => return true,
+            _ => Some(state),
         }
-        true
     }
 
     fn try_track_constructor(
         &self,
         item: &Item,
-        type_name: &mut Option<String>,
-        count: &mut usize,
-    ) -> Option<()> {
+        state: ConstructorScanState,
+    ) -> (ConstructorScanState, Option<()>) {
         let Item::Impl(item_impl) = item else {
-            return None;
+            return (state, None);
         };
-        let expected_name = type_name.as_deref()?;
-        if !self.impl_is_trivial_constructor_only(item_impl, expected_name) {
-            return None;
+        let matched = match state.type_name.as_deref() {
+            Some(expected_name) => self.impl_is_trivial_constructor_only(item_impl, expected_name),
+            None => false,
+        };
+        if !matched {
+            return (state, None);
         }
-        *count += 1;
-        if *count > 1 {
-            return None;
-        }
-        Some(())
+        let constructor_impl_count = state.constructor_impl_count + 1;
+        let verdict = if constructor_impl_count > 1 {
+            None
+        } else {
+            Some(())
+        };
+        (
+            ConstructorScanState {
+                type_name: state.type_name,
+                constructor_impl_count,
+            },
+            verdict,
+        )
     }
 
     // Every impl block other than the single trivial constructor must earn its
