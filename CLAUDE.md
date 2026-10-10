@@ -48,12 +48,13 @@ a fresh checkout with none of the house tools installed.
 Stage 2 is `cargo xtask stage2` -- a real crate under `xtask/`, gated like any
 other code, rather than a script. Each gate is a `Gate` implementation
 constructed against a `CommandRunner` trait, so the argument lists and the
-failure messages are covered by `xtask`'s own integration tests. It runs four
+failure messages are covered by `xtask`'s own integration tests. It runs five
 gates, in this order:
 
 | gate | asks |
 |---|---|
 | `cargo stern4rust` | do the house coding rules hold |
+| `cargo dry4rust` | did this change add duplicated code |
 | `cargo crap4rust` | is any function complex and untested |
 | `cargo twin4rust` | does every source file have a mirrored test file |
 | `cargo iceberg4rust` | is any file's private implementation risk too high |
@@ -61,6 +62,26 @@ gates, in this order:
 stern4rust runs **first** because its corrections are renames, file moves and
 directory splits: a layout it is about to reject is a layout the others would
 have measured for nothing. Its findings are also the cheapest to act on.
+
+`dry4rust` runs **second** for the same reason: removing a duplicate moves code
+between files, which changes what the three behind it measure. It scans
+`core/src` only -- tests repeat their arrangement by design -- and checks with
+zero ceilings against `dry4rust-baseline.json`, the duplication already there
+when the gate arrived. So it fails on what a change adds, not on what it
+inherited; a duplicate removed is admitted, a copy added to a recorded group is
+not. The baseline is empty: at the gate's floor `core/src` had no duplication to
+inherit, so today any group at all fails the gate.
+
+It counts only code units of 25 AST nodes or more, the floor the rest of the
+family uses. Below it sit units that look alike because there is one way to
+write them: three `new` constructors whose whole body is a one-field struct
+literal, and `AnalysisReport`'s two one-line accessors. At dry4rust's default of 10 those are
+two groups that sharing would not improve; at 25 they drop out, and a copied
+method body of any real size is still caught.
+
+Re-record the baseline only to drop groups that are gone, never to admit new
+ones, and at the same floor -- a baseline matches only at the floor it was
+recorded at: `cargo dry4rust --path core/src --min-nodes 25 --baseline "$PWD/dry4rust-baseline.json" baseline`.
 
 All twenty-two of its rules are enforced, with nothing skipped, nothing
 unconfigured and no baseline: `stern4rust.toml` carries no `skip` and no `rules`
@@ -77,6 +98,7 @@ runs the gates is not exempt from them.
 `cargo install just`
 `cargo install cargo-llvm-cov`
 `cargo install cargo-stern4rust`
+`cargo install cargo-dry4rust`
 `cargo install cargo-crap4rust`
 `cargo install cargo-iceberg4rust`
 
