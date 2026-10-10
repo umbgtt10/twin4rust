@@ -6,6 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-10
+
+How the code is held to the house rules, and one more gate. No behaviour
+changed: same CLI, same output, same exit codes, so nothing this tool reports
+about your code moves. Patch rather than minor because no `pub` item of the
+`twin4rust` library changed signature or was removed; the library's only change
+is an addition, the plain-data `ConstructorScanState`.
+
+### Added
+- `twin4rust::constructor_scan_state::ConstructorScanState`: the type seen so
+  far and the number of trivial-`new` impls naming it, which
+  `TrivialConstructorDetector` threads through its walk over a file's items.
+  Plain data in its own file, so the tool's own rule exempts it from a mirror
+  test.
+
+### Changed
+- **`TrivialConstructorDetector` returns its scan state instead of writing it
+  through `&mut` parameters**, so the tree satisfies stern4rust 0.14.0's
+  `returned-mutations`. Each step takes the state by value and hands it back;
+  the counter moves in exactly the branches it did before, including the one
+  that rejects a second constructor impl. Beyond the 193 tests, the 0.5.0 binary
+  and this one gave byte-identical output and the same exit code on this
+  workspace, on stern4rust's, and on a fixture of fourteen constructor shapes.
+- **All twenty-two stern4rust rules are enforced**, with nothing skipped, nothing
+  unconfigured and no baseline. Six offences were fixed: `returned-mutations` 5,
+  all in the detector above, and `test-file-structure` 1, a blank line between
+  two constants in an xtask test file, which stern4rust 0.13.0 packs like
+  imports.
+- **Stage 2 gains a fifth gate, `cargo dry4rust`, second after the house
+  rules**: no duplicated code in `core/src` beyond `dry4rust-baseline.json`,
+  counting units of 25 AST nodes or more. It is a `DryGate` against the
+  `CommandRunner` seam like the other four, pinned by six integration tests.
+  `core/src` had no duplicate group at that floor, so the baseline records none
+  and any duplication added fails the gate. CI installs `cargo-dry4rust` with
+  the other stage-2 tools.
+
 ## [0.5.0] - 2026-08-24
 
 How the gates are run, and where the crate lives. No rule changed, so nothing
