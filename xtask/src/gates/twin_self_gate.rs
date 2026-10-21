@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 use crate::gates::gate::Gate;
+use crate::gates::gate_failure::GateFailure;
 use crate::process::command_runner::CommandRunner;
 
 pub struct TwinSelfGate<'a> {
@@ -33,7 +34,7 @@ impl Gate for TwinSelfGate<'_> {
         String::from("twin4rust self-analysis")
     }
 
-    fn run(&self) -> Result<(), String> {
+    fn run(&self) -> Result<(), GateFailure> {
         // Built from this checkout rather than taken from an install: a tool
         // that checks its own mirrored tests has to check the tree being
         // changed.
@@ -59,7 +60,9 @@ impl Gate for TwinSelfGate<'_> {
 
         match self.runner.run_streaming("cargo", &args)? {
             Some(0) => Ok(()),
-            _ => Err(String::from("source files without a mirrored test")),
+            _ => Err(GateFailure::Found(String::from(
+                "source files without a mirrored test",
+            ))),
         }
     }
 }

@@ -111,7 +111,7 @@ fn run_with_a_non_zero_exit_code_reports_a_missing_mirrored_test() {
 
     // Assert
     assert_eq!(
-        result,
+        result.map_err(|failure| failure.to_string()),
         Err(String::from("source files without a mirrored test"))
     );
 }
