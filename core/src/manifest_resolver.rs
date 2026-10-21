@@ -20,6 +20,14 @@ impl ManifestResolver {
         Self { config }
     }
 
+    pub fn relative_file(base_dir: &Path, file_path: &Path) -> String {
+        file_path
+            .strip_prefix(base_dir)
+            .unwrap_or(file_path)
+            .to_string_lossy()
+            .replace('\\', "/")
+    }
+
     pub fn resolve(&self) -> Result<Vec<PackageContext>> {
         let mut command = MetadataCommand::new();
         command.no_deps();
@@ -35,32 +43,6 @@ impl ManifestResolver {
             .into_iter()
             .map(Self::build_package_context)
             .collect()
-    }
-
-    fn build_package_context(package: &Package) -> Result<PackageContext> {
-        let manifest_dir = package
-            .manifest_path
-            .clone()
-            .into_std_path_buf()
-            .parent()
-            .map(PathBuf::from)
-            .context("package manifest has no parent directory")?;
-
-        let mut root_collector = TargetRootCollector::new();
-        root_collector.collect_from_targets(&package.targets);
-        root_collector.ensure_fallback(&manifest_dir);
-        let source_roots = root_collector.into_roots();
-        let name = package.name.to_string();
-        let source_roots = source_roots
-            .into_iter()
-            .filter(|root| !Self::should_ignore_source_root(&name, &manifest_dir, root))
-            .collect::<Vec<_>>();
-
-        Ok(PackageContext {
-            name,
-            manifest_dir,
-            source_roots,
-        })
     }
 
     pub fn select_packages<'a>(
@@ -89,19 +71,37 @@ impl ManifestResolver {
         bail!("manifest contains multiple packages; pass --package <name>")
     }
 
+    fn build_package_context(package: &Package) -> Result<PackageContext> {
+        let manifest_dir = package
+            .manifest_path
+            .clone()
+            .into_std_path_buf()
+            .parent()
+            .map(PathBuf::from)
+            .context("package manifest has no parent directory")?;
+
+        let mut root_collector = TargetRootCollector::new();
+        root_collector.collect_from_targets(&package.targets);
+        root_collector.ensure_fallback(&manifest_dir);
+        let source_roots = root_collector.into_roots();
+        let name = package.name.to_string();
+        let source_roots = source_roots
+            .into_iter()
+            .filter(|root| !Self::should_ignore_source_root(&name, &manifest_dir, root))
+            .collect::<Vec<_>>();
+
+        Ok(PackageContext {
+            name,
+            manifest_dir,
+            source_roots,
+        })
+    }
+
     fn should_ignore_source_root(
         package_name: &str,
         manifest_dir: &Path,
         source_root: &Path,
     ) -> bool {
         package_name.ends_with("-validation") && source_root == manifest_dir.join("src")
-    }
-
-    pub fn relative_file(base_dir: &Path, file_path: &Path) -> String {
-        file_path
-            .strip_prefix(base_dir)
-            .unwrap_or(file_path)
-            .to_string_lossy()
-            .replace('\\', "/")
     }
 }

@@ -47,16 +47,6 @@ impl TargetRootCollector {
             .collect()
     }
 
-    // A root inside another is redundant, because the walk recurses: every file
-    // under it is already reached through the outer root, and left in it would
-    // be read, parsed and reported twice. Compared component-wise rather than as
-    // text, so `src_generated` is not mistaken for something inside `src`.
-    fn is_nested_in_any(candidate: &Path, roots: &[PathBuf]) -> bool {
-        roots
-            .iter()
-            .any(|other| other.as_path() != candidate && candidate.starts_with(other))
-    }
-
     pub fn is_production_target(target: &Target) -> bool {
         let kinds = target
             .kind
@@ -77,5 +67,15 @@ impl TargetRootCollector {
                 "lib" | "bin" | "proc-macro" | "rlib" | "dylib" | "cdylib" | "staticlib"
             )
         })
+    }
+
+    // A root inside another is redundant, because the walk recurses: every file
+    // under it is already reached through the outer root, and left in it would
+    // be read, parsed and reported twice. Compared component-wise rather than as
+    // text, so `src_generated` is not mistaken for something inside `src`.
+    fn is_nested_in_any(candidate: &Path, roots: &[PathBuf]) -> bool {
+        roots
+            .iter()
+            .any(|other| other.as_path() != candidate && candidate.starts_with(other))
     }
 }

@@ -22,6 +22,13 @@ impl DefinitionAnalyzer {
         }
     }
 
+    pub fn has_test_attrs(attrs: &[Attribute]) -> bool {
+        attrs.iter().any(|attr| {
+            let path = attr.path();
+            path.is_ident("cfg") && attr.meta.to_token_stream().to_string().contains("test")
+        })
+    }
+
     pub fn is_definition_only_source(&self, source: &str) -> Result<bool> {
         let syntax = parse_file(source).context("failed to parse Rust source")?;
         Ok(self.file_is_definition_only(&syntax))
@@ -36,24 +43,6 @@ impl DefinitionAnalyzer {
                 Item::Use(_) | Item::ExternCrate(_) | Item::Mod(ItemMod { content: None, .. })
             )
         }))
-    }
-
-    fn file_is_definition_only(&self, syntax: &File) -> bool {
-        let items = self.top_level_non_test_items(&syntax.items);
-
-        if items.is_empty() {
-            return false;
-        }
-
-        if self.all_definition_only(&items) {
-            return self.count_declaring_items(&items) > 0;
-        }
-
-        if TrivialConstructorDetector::new().file_has_trivial_constructor(&items) {
-            return true;
-        }
-
-        HumbleAdapterDetector::new().file_is_humble_adapter(&items)
     }
 
     // `Item::Macro` and `Item::Verbatim` are deliberately absent: a top-level
@@ -98,18 +87,29 @@ impl DefinitionAnalyzer {
             .count()
     }
 
+    fn file_is_definition_only(&self, syntax: &File) -> bool {
+        let items = self.top_level_non_test_items(&syntax.items);
+
+        if items.is_empty() {
+            return false;
+        }
+
+        if self.all_definition_only(&items) {
+            return self.count_declaring_items(&items) > 0;
+        }
+
+        if TrivialConstructorDetector::new().file_has_trivial_constructor(&items) {
+            return true;
+        }
+
+        HumbleAdapterDetector::new().file_is_humble_adapter(&items)
+    }
+
     fn top_level_non_test_items<'a>(&self, items: &'a [Item]) -> Vec<&'a Item> {
         items
             .iter()
             .filter(|item| !Self::has_test_attrs(item.attrs()))
             .collect()
-    }
-
-    pub fn has_test_attrs(attrs: &[Attribute]) -> bool {
-        attrs.iter().any(|attr| {
-            let path = attr.path();
-            path.is_ident("cfg") && attr.meta.to_token_stream().to_string().contains("test")
-        })
     }
 }
 

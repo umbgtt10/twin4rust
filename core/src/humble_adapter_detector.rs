@@ -57,22 +57,6 @@ impl HumbleAdapterDetector {
         })
     }
 
-    fn single_declared_type(items: &[&Item]) -> Option<String> {
-        let mut found: Option<String> = None;
-        for item in items {
-            let name = match item {
-                Item::Struct(item_struct) => item_struct.ident.to_string(),
-                Item::Enum(item_enum) => item_enum.ident.to_string(),
-                _ => continue,
-            };
-            if found.is_some() {
-                return None;
-            }
-            found = Some(name);
-        }
-        found
-    }
-
     fn impl_is_humble(item_impl: &ItemImpl, type_name: &str) -> bool {
         if item_impl.trait_.is_some() {
             return false;
@@ -96,20 +80,23 @@ impl HumbleAdapterDetector {
         })
     }
 
-    fn method_is_humble(method: &ImplItemFn) -> bool {
-        Self::is_trivial_constructor(method) || Self::is_forwarding(method)
-    }
-
-    fn is_trivial_constructor(method: &ImplItemFn) -> bool {
-        method.sig.ident == "new"
-            && method.sig.generics.params.is_empty()
-            && matches!(
-                method.sig.output,
-                ReturnType::Type(_, ref ty)
-                    if matches!(ty.as_ref(), Type::Path(path) if path.path.is_ident("Self"))
-            )
-            && method.block.stmts.len() == 1
-            && matches!(&method.block.stmts[0], Stmt::Expr(Expr::Struct(_), _))
+    // `Item::Macro` and `Item::Verbatim` are absent for the same reason they are
+    // absent from `DefinitionAnalyzer`: an unexpanded macro says nothing about
+    // the behaviour it expands to, so one keeps the file in scope.
+    fn is_allowed_item(item: &Item) -> bool {
+        matches!(
+            item,
+            Item::Use(_)
+                | Item::ExternCrate(_)
+                | Item::Mod(ItemMod { content: None, .. })
+                | Item::Const(_)
+                | Item::Static(_)
+                | Item::Type(_)
+                | Item::Trait(_)
+                | Item::Struct(_)
+                | Item::Enum(_)
+                | Item::Impl(_)
+        )
     }
 
     // Returns nothing, and its whole body is one call. A method that returns a
@@ -130,6 +117,22 @@ impl HumbleAdapterDetector {
         )
     }
 
+    fn is_trivial_constructor(method: &ImplItemFn) -> bool {
+        method.sig.ident == "new"
+            && method.sig.generics.params.is_empty()
+            && matches!(
+                method.sig.output,
+                ReturnType::Type(_, ref ty)
+                    if matches!(ty.as_ref(), Type::Path(path) if path.path.is_ident("Self"))
+            )
+            && method.block.stmts.len() == 1
+            && matches!(&method.block.stmts[0], Stmt::Expr(Expr::Struct(_), _))
+    }
+
+    fn method_is_humble(method: &ImplItemFn) -> bool {
+        Self::is_trivial_constructor(method) || Self::is_forwarding(method)
+    }
+
     fn returns_nothing(output: &ReturnType) -> bool {
         match output {
             ReturnType::Default => true,
@@ -139,22 +142,19 @@ impl HumbleAdapterDetector {
         }
     }
 
-    // `Item::Macro` and `Item::Verbatim` are absent for the same reason they are
-    // absent from `DefinitionAnalyzer`: an unexpanded macro says nothing about
-    // the behaviour it expands to, so one keeps the file in scope.
-    fn is_allowed_item(item: &Item) -> bool {
-        matches!(
-            item,
-            Item::Use(_)
-                | Item::ExternCrate(_)
-                | Item::Mod(ItemMod { content: None, .. })
-                | Item::Const(_)
-                | Item::Static(_)
-                | Item::Type(_)
-                | Item::Trait(_)
-                | Item::Struct(_)
-                | Item::Enum(_)
-                | Item::Impl(_)
-        )
+    fn single_declared_type(items: &[&Item]) -> Option<String> {
+        let mut found: Option<String> = None;
+        for item in items {
+            let name = match item {
+                Item::Struct(item_struct) => item_struct.ident.to_string(),
+                Item::Enum(item_enum) => item_enum.ident.to_string(),
+                _ => continue,
+            };
+            if found.is_some() {
+                return None;
+            }
+            found = Some(name);
+        }
+        found
     }
 }

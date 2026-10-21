@@ -29,13 +29,6 @@ impl Analyzer {
         }
     }
 
-    pub fn analyze_packages(&self, packages: &[PackageContext]) -> Result<Vec<AnalysisReport>> {
-        packages
-            .iter()
-            .map(|pkg| self.analyze_package(pkg))
-            .collect()
-    }
-
     pub fn analyze_package(&self, package: &PackageContext) -> Result<AnalysisReport> {
         let mut missing = Vec::new();
         for source_root in &package.source_roots {
@@ -49,21 +42,11 @@ impl Analyzer {
         Ok(AnalysisReport::new(package.name.clone(), missing))
     }
 
-    fn process_source_root(
-        &self,
-        source_root: &Path,
-        package: &PackageContext,
-    ) -> Result<Vec<MissingTestGap>> {
-        if !source_root.exists() {
-            return Ok(Vec::new());
-        }
-        let mut missing = Vec::new();
-        for source_path in SourceWalker::walk(source_root) {
-            if let Some(gap) = self.check_source_file(&source_path, package)? {
-                missing.push(gap);
-            }
-        }
-        Ok(missing)
+    pub fn analyze_packages(&self, packages: &[PackageContext]) -> Result<Vec<AnalysisReport>> {
+        packages
+            .iter()
+            .map(|pkg| self.analyze_package(pkg))
+            .collect()
     }
 
     fn check_source_file(
@@ -112,6 +95,34 @@ impl Analyzer {
         }))
     }
 
+    // `src/bin/` is where cargo looks for a package's extra binaries, so a file
+    // directly under it is an entry point in the same sense `src/main.rs` is,
+    // and a mirrored test for its `fn main` would assert nothing. A file deeper
+    // than that is a module belonging to one, and stays in scope.
+    fn is_entry_point(relative_source: &str) -> bool {
+        matches!(relative_source, "src/lib.rs" | "src/main.rs" | "build.rs")
+            || relative_source
+                .strip_prefix("src/bin/")
+                .is_some_and(|rest| !rest.contains('/'))
+    }
+
+    fn process_source_root(
+        &self,
+        source_root: &Path,
+        package: &PackageContext,
+    ) -> Result<Vec<MissingTestGap>> {
+        if !source_root.exists() {
+            return Ok(Vec::new());
+        }
+        let mut missing = Vec::new();
+        for source_path in SourceWalker::walk(source_root) {
+            if let Some(gap) = self.check_source_file(&source_path, package)? {
+                missing.push(gap);
+            }
+        }
+        Ok(missing)
+    }
+
     fn should_ignore_package_source(
         &self,
         package: &PackageContext,
@@ -130,16 +141,5 @@ impl Analyzer {
         }
 
         Ok(false)
-    }
-
-    // `src/bin/` is where cargo looks for a package's extra binaries, so a file
-    // directly under it is an entry point in the same sense `src/main.rs` is,
-    // and a mirrored test for its `fn main` would assert nothing. A file deeper
-    // than that is a module belonging to one, and stays in scope.
-    fn is_entry_point(relative_source: &str) -> bool {
-        matches!(relative_source, "src/lib.rs" | "src/main.rs" | "build.rs")
-            || relative_source
-                .strip_prefix("src/bin/")
-                .is_some_and(|rest| !rest.contains('/'))
     }
 }
