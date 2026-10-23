@@ -50,7 +50,7 @@ Windows, Linux and macOS. Stage 1 is formatting, clippy and tests — cargo
 built-ins only, so it works on a fresh checkout with none of the tools below
 installed. Stage 2 is `cargo xtask stage2`, which runs, in order:
 `cargo stern4rust` (house coding rules, all twenty-two, nothing skipped),
-`cargo dry4rust` (no duplication in `core/src` beyond `dry4rust-baseline.json`),
+`cargo shear` (every declared dependency used), `cargo dry4rust` (no duplication in `core/src` beyond `dry4rust-baseline.json`),
 `cargo crap4rust` (complexity against coverage), **twin4rust self-analysis**, and
 `cargo iceberg4rust` (file risk).
 
@@ -72,6 +72,7 @@ Everything the two stages need, none of which ships with cargo:
 | `cargo-dry4rust` | `cargo install cargo-dry4rust` | stage 2 |
 | `cargo-crap4rust` | `cargo install cargo-crap4rust` | stage 2 |
 | `cargo-iceberg4rust` | `cargo install cargo-iceberg4rust` | stage 2 |
+| [`cargo-shear`](https://github.com/Boshen/cargo-shear) | `cargo install --locked cargo-shear --version 1.14.0` | stage 2 |
 
 `cargo-twin4rust` itself is deliberately absent — the gate builds it from your
 checkout rather than taking an installed copy.
