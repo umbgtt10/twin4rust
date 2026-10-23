@@ -20,10 +20,10 @@ fn parse_args_all_options() {
 
     // Assert
     assert_eq!(
-        args.manifest_path.unwrap().to_string_lossy(),
+        args.manifest_path().unwrap().to_string_lossy(),
         "my/Cargo.toml"
     );
-    assert_eq!(args.packages, vec!["pkg_a", "pkg_b"]);
+    assert_eq!(args.packages(), vec!["pkg_a", "pkg_b"]);
 }
 
 #[test]
@@ -32,8 +32,8 @@ fn parse_args_defaults() {
     let args = Args::parse_from(["cargo-twin4rust"]);
 
     // Assert
-    assert!(args.manifest_path.is_none());
-    assert!(args.packages.is_empty());
+    assert!(args.manifest_path().is_none());
+    assert!(args.packages().is_empty());
 }
 
 #[test]
@@ -42,7 +42,10 @@ fn parse_args_manifest_path() {
     let args = Args::parse_from(["cargo-twin4rust", "--manifest-path", "Cargo.toml"]);
 
     // Assert
-    assert_eq!(args.manifest_path.unwrap().to_string_lossy(), "Cargo.toml");
+    assert_eq!(
+        args.manifest_path().unwrap().to_string_lossy(),
+        "Cargo.toml"
+    );
 }
 
 #[test]
@@ -59,7 +62,7 @@ fn parse_args_multiple_packages() {
     ]);
 
     // Assert
-    assert_eq!(args.packages, vec!["foo", "bar", "baz"]);
+    assert_eq!(args.packages(), vec!["foo", "bar", "baz"]);
 }
 
 #[test]
@@ -68,7 +71,7 @@ fn parse_args_single_package() {
     let args = Args::parse_from(["cargo-twin4rust", "--package", "foo"]);
 
     // Assert
-    assert_eq!(args.packages, vec!["foo"]);
+    assert_eq!(args.packages(), vec!["foo"]);
 }
 
 #[test]
@@ -109,7 +112,7 @@ fn without_cargo_subcommand_keeps_a_package_that_happens_to_be_named_twin4rust()
     let args = Args::parse_from(Args::without_cargo_subcommand(raw));
 
     // Assert
-    assert_eq!(args.packages, vec!["twin4rust"]);
+    assert_eq!(args.packages(), vec!["twin4rust"]);
 }
 
 #[test]

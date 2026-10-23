@@ -2,6 +2,7 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
+use std::path::Path;
 use std::path::PathBuf;
 
 use clap::Parser;
@@ -13,13 +14,28 @@ use clap::Parser;
 #[command(about = "Check mirrored test coverage expectations for Rust packages")]
 pub struct Args {
     #[arg(long)]
-    pub manifest_path: Option<PathBuf>,
+    manifest_path: Option<PathBuf>,
 
     #[arg(long = "package")]
-    pub packages: Vec<String>,
+    packages: Vec<String>,
 }
 
 impl Args {
+    pub fn new(manifest_path: Option<PathBuf>, packages: Vec<String>) -> Self {
+        Self {
+            manifest_path,
+            packages,
+        }
+    }
+
+    pub fn manifest_path(&self) -> Option<&Path> {
+        self.manifest_path.as_deref()
+    }
+
+    pub fn packages(&self) -> &[String] {
+        &self.packages
+    }
+
     /// Cargo invokes `cargo twin4rust` as `cargo-twin4rust twin4rust ...`, so the
     /// subcommand name arrives as an extra leading argument that clap would
     /// otherwise reject. Running the binary directly does not repeat it.

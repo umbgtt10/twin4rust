@@ -32,12 +32,12 @@ impl ManifestResolver {
         let mut command = MetadataCommand::new();
         command.no_deps();
 
-        if let Some(manifest_path) = &self.config.manifest_path {
+        if let Some(manifest_path) = &self.config.manifest_path() {
             command.manifest_path(manifest_path);
         }
 
         let metadata = command.exec().context("failed to read Cargo metadata")?;
-        let packages = Self::select_packages(&metadata, &self.config.packages)?;
+        let packages = Self::select_packages(&metadata, self.config.packages())?;
 
         packages
             .into_iter()
@@ -90,11 +90,7 @@ impl ManifestResolver {
             .filter(|root| !Self::should_ignore_source_root(&name, &manifest_dir, root))
             .collect::<Vec<_>>();
 
-        Ok(PackageContext {
-            name,
-            manifest_dir,
-            source_roots,
-        })
+        Ok(PackageContext::new(name, manifest_dir, source_roots))
     }
 
     fn should_ignore_source_root(

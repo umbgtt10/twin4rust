@@ -9,10 +9,10 @@ use twin4rust::runner::Runner;
 #[test]
 fn run_against_a_manifest_that_does_not_exist_returns_an_error() {
     // Arrange
-    let args = Args {
-        manifest_path: Some(PathBuf::from("no").join("such").join("Cargo.toml")),
-        packages: vec![],
-    };
+    let args = Args::new(
+        Some(PathBuf::from("no").join("such").join("Cargo.toml")),
+        vec![],
+    );
 
     // Act
     let result = Runner::run(args);
@@ -24,10 +24,10 @@ fn run_against_a_manifest_that_does_not_exist_returns_an_error() {
 #[test]
 fn run_against_this_package_finds_no_missing_mirror() {
     // Arrange
-    let args = Args {
-        manifest_path: Some(PathBuf::from("Cargo.toml")),
-        packages: vec![String::from("cargo-twin4rust")],
-    };
+    let args = Args::new(
+        Some(PathBuf::from("Cargo.toml")),
+        vec![String::from("cargo-twin4rust")],
+    );
 
     // Act
     let result = Runner::run(args);

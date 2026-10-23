@@ -13,11 +13,7 @@ fn analyzer() -> Analyzer {
 }
 
 fn package_context(root: &Path, name: &str) -> PackageContext {
-    PackageContext {
-        name: name.to_string(),
-        manifest_dir: root.to_path_buf(),
-        source_roots: vec![root.join("src")],
-    }
+    PackageContext::new(name.to_string(), root.to_path_buf(), vec![root.join("src")])
 }
 
 fn write_file(root: &Path, relative_path: &str, contents: &str) {
@@ -58,7 +54,7 @@ fn main() {
     assert!(
         report.is_empty(),
         "a binary entry point under src/bin should be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -100,7 +96,7 @@ impl BoardHalter {
     assert!(
         report.is_empty(),
         "a constructor plus a forwarding method has nothing to mirror, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -138,18 +134,18 @@ pub fn parse(input: &str) -> usize {
 
     // Assert
     assert_eq!(
-        report.missing.len(),
+        report.missing().len(),
         1,
         "only the parser module should be reported, got: {:?}",
-        report.missing
+        report.missing()
     );
     assert!(
-        report.missing[0]
-            .relative_source_file
+        report.missing()[0]
+            .relative_source_file()
             .replace(std::path::MAIN_SEPARATOR, "/")
             .ends_with("src/bin/tool/parser.rs"),
         "expected the parser module, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -182,10 +178,10 @@ impl RttChannelConfig {
 
     // Assert
     assert_eq!(
-        report.missing.len(),
+        report.missing().len(),
         1,
         "a method producing a value must stay in scope, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -221,10 +217,10 @@ impl BoardHalter {
 
     // Assert
     assert_eq!(
-        report.missing.len(),
+        report.missing().len(),
         1,
         "an adapter carrying a decision must be reported, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -262,8 +258,8 @@ fn analyze_packages_over_two_packages_returns_a_report_for_each() {
 
     // Assert
     assert_eq!(reports.len(), 2);
-    assert_eq!(reports[0].package_name, "first");
-    assert_eq!(reports[1].package_name, "second");
+    assert_eq!(reports[0].package_name(), "first");
+    assert_eq!(reports[1].package_name(), "second");
 }
 
 #[test]
@@ -294,7 +290,7 @@ impl InMemoryTransport {
     assert!(
         report.is_empty(),
         "validation crate source should still be ignored even when behavioral, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -328,11 +324,11 @@ impl Status {
     // Assert
     assert!(
         report
-            .missing
+            .missing()
             .iter()
-            .any(|gap| gap.relative_source_file == "src/common_types/status.rs"),
+            .any(|gap| gap.relative_source_file() == "src/common_types/status.rs"),
         "enum with non-struct body in new() should not be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -366,7 +362,7 @@ impl<T> Wrapper<T> {
     assert!(
         report.is_empty(),
         "struct with generic trivial new constructor should be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -399,9 +395,9 @@ pub fn do_work() {}
 
     // Assert
     let missing_files = report
-        .missing
+        .missing()
         .iter()
-        .map(|gap| gap.relative_source_file.as_str())
+        .map(|gap| gap.relative_source_file())
         .collect::<Vec<_>>();
 
     assert!(
@@ -452,7 +448,7 @@ fn main() {}
     assert!(
         report.is_empty(),
         "lib.rs, main.rs, and build.rs should be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -476,12 +472,12 @@ pub fn start_client() {}
 
     // Assert
     assert!(
-        report.missing.iter().any(|gap| {
-            gap.relative_source_file == "src/implementations/raft/client.rs"
-                && gap.expected_test_file == "tests/implementations/raft/client_tests.rs"
+        report.missing().iter().any(|gap| {
+            gap.relative_source_file() == "src/implementations/raft/client.rs"
+                && gap.expected_test_file() == "tests/implementations/raft/client_tests.rs"
         }),
         "expected nested mirrored path to be reported, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -508,11 +504,11 @@ pub fn configure() {}
     // Assert
     assert!(
         !report
-            .missing
+            .missing()
             .iter()
-            .any(|gap| gap.relative_source_file == "src/feature/mod.rs"),
+            .any(|gap| gap.relative_source_file() == "src/feature/mod.rs"),
         "mod.rs files should be ignored under the current gate policy, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -548,7 +544,7 @@ pub enum QueryKind {
     assert!(
         report.is_empty(),
         "multiple definition-only items should be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -585,11 +581,11 @@ impl Response {
     // Assert
     assert!(
         report
-            .missing
+            .missing()
             .iter()
-            .any(|gap| gap.relative_source_file == "src/common_types/response.rs"),
+            .any(|gap| gap.relative_source_file() == "src/common_types/response.rs"),
         "nontrivial new constructor should not be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -621,7 +617,7 @@ pub enum StorageQueryResult {
     assert!(
         report.is_empty(),
         "single enum definition file should be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -650,7 +646,7 @@ pub struct NodeRole {
     assert!(
         report.is_empty(),
         "single struct definition file should be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -691,7 +687,7 @@ fn main() {
     assert!(
         report.is_empty(),
         "every binary entry point under src/bin should be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -729,11 +725,11 @@ impl MessageSource {
     // Assert
     assert!(
         report
-            .missing
+            .missing()
             .iter()
-            .any(|gap| gap.relative_source_file == "src/common_types/message_source.rs"),
+            .any(|gap| gap.relative_source_file() == "src/common_types/message_source.rs"),
         "enum with nontrivial impl should not be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -766,11 +762,11 @@ impl Builder {
     // Assert
     assert!(
         report
-            .missing
+            .missing()
             .iter()
-            .any(|gap| gap.relative_source_file == "src/common_types/builder.rs"),
+            .any(|gap| gap.relative_source_file() == "src/common_types/builder.rs"),
         "struct with constructor not named new should not be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -799,7 +795,7 @@ impl Marker {
     assert!(
         !report.is_empty(),
         "struct with empty impl should not be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -837,11 +833,11 @@ impl Snapshot {
     // Assert
     assert!(
         report
-            .missing
+            .missing()
             .iter()
-            .any(|gap| gap.relative_source_file == "src/common_types/snapshot.rs"),
+            .any(|gap| gap.relative_source_file() == "src/common_types/snapshot.rs"),
         "struct with multiple impl methods should not be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -872,11 +868,11 @@ impl From<u64> for Convertible {
     // Assert
     assert!(
         report
-            .missing
+            .missing()
             .iter()
-            .any(|gap| gap.relative_source_file == "src/common_types/convertible.rs"),
+            .any(|gap| gap.relative_source_file() == "src/common_types/convertible.rs"),
         "struct with trait impl should not be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -914,7 +910,7 @@ impl PeerRecoveryStatus {
     assert!(
         report.is_empty(),
         "single struct with trivial new constructor should be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -943,7 +939,7 @@ pub struct Point {
     assert!(
         report.is_empty(),
         "struct with no impl should be ignored as definition-only, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -973,7 +969,7 @@ pub type StorageKey = u64;
     assert!(
         report.is_empty(),
         "trait/type definition-only file should be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -1008,11 +1004,11 @@ impl Printable for Displayable {
     // Assert
     assert!(
         report
-            .missing
+            .missing()
             .iter()
-            .any(|gap| gap.relative_source_file == "src/common_types/displayable.rs"),
+            .any(|gap| gap.relative_source_file() == "src/common_types/displayable.rs"),
         "trait impl for a single type should not be ignored, got: {:?}",
-        report.missing
+        report.missing()
     );
 }
 
@@ -1042,6 +1038,6 @@ pub fn helper() -> usize {
     assert!(
         report.is_empty(),
         "validation crate src files should be ignored entirely, got: {:?}",
-        report.missing
+        report.missing()
     );
 }

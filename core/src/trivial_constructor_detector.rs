@@ -20,10 +20,7 @@ impl TrivialConstructorDetector {
     }
 
     pub fn file_has_trivial_constructor(&self, items: &[&Item]) -> bool {
-        let mut state = ConstructorScanState {
-            type_name: None,
-            constructor_impl_count: 0,
-        };
+        let mut state = ConstructorScanState::new(None, 0);
 
         for item in items {
             match self.process_item(item, state) {
@@ -32,7 +29,7 @@ impl TrivialConstructorDetector {
             }
         }
 
-        state.type_name.is_some() && state.constructor_impl_count == 1
+        state.type_name().is_some() && state.constructor_impl_count() == 1
     }
 
     pub fn impl_is_trivial_constructor_only(
@@ -137,24 +134,24 @@ impl TrivialConstructorDetector {
         let Item::Impl(item_impl) = item else {
             return (state, None);
         };
-        let matched = match state.type_name.as_deref() {
+        let matched = match state.type_name() {
             Some(expected_name) => self.impl_is_trivial_constructor_only(item_impl, expected_name),
             None => false,
         };
         if !matched {
             return (state, None);
         }
-        let constructor_impl_count = state.constructor_impl_count + 1;
+        let constructor_impl_count = state.constructor_impl_count() + 1;
         let verdict = if constructor_impl_count > 1 {
             None
         } else {
             Some(())
         };
         (
-            ConstructorScanState {
-                type_name: state.type_name,
+            ConstructorScanState::new(
+                state.type_name().map(str::to_string),
                 constructor_impl_count,
-            },
+            ),
             verdict,
         )
     }
@@ -166,22 +163,22 @@ impl TrivialConstructorDetector {
     ) -> Option<ConstructorScanState> {
         match item {
             Item::Struct(item_struct) => {
-                if state.type_name.is_some() {
+                if state.type_name().is_some() {
                     return None;
                 }
-                Some(ConstructorScanState {
-                    type_name: Some(item_struct.ident.to_string()),
-                    constructor_impl_count: state.constructor_impl_count,
-                })
+                Some(ConstructorScanState::new(
+                    Some(item_struct.ident.to_string()),
+                    state.constructor_impl_count(),
+                ))
             }
             Item::Enum(item_enum) => {
-                if state.type_name.is_some() {
+                if state.type_name().is_some() {
                     return None;
                 }
-                Some(ConstructorScanState {
-                    type_name: Some(item_enum.ident.to_string()),
-                    constructor_impl_count: state.constructor_impl_count,
-                })
+                Some(ConstructorScanState::new(
+                    Some(item_enum.ident.to_string()),
+                    state.constructor_impl_count(),
+                ))
             }
             _ => Some(state),
         }

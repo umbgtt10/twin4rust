@@ -6,8 +6,8 @@ use crate::missing_test_gap::MissingTestGap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AnalysisReport {
-    pub package_name: String,
-    pub missing: Vec<MissingTestGap>,
+    package_name: String,
+    missing: Vec<MissingTestGap>,
 }
 
 impl AnalysisReport {
@@ -22,7 +22,15 @@ impl AnalysisReport {
         self.missing.is_empty()
     }
 
+    pub fn missing(&self) -> &[MissingTestGap] {
+        &self.missing
+    }
+
     pub fn missing_count(&self) -> usize {
         self.missing.len()
+    }
+
+    pub fn package_name(&self) -> &str {
+        &self.package_name
     }
 }
