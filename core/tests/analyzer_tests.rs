@@ -13,7 +13,11 @@ fn analyzer() -> Analyzer {
 }
 
 fn package_context(root: &Path, name: &str) -> PackageContext {
-    PackageContext::new(name.to_string(), root.to_path_buf(), vec![root.join("src")])
+    PackageContext {
+        name: name.to_string(),
+        manifest_dir: root.to_path_buf(),
+        source_roots: vec![root.join("src")],
+    }
 }
 
 fn write_file(root: &Path, relative_path: &str, contents: &str) {
@@ -141,7 +145,7 @@ pub fn parse(input: &str) -> usize {
     );
     assert!(
         report.missing()[0]
-            .relative_source_file()
+            .relative_source_file
             .replace(std::path::MAIN_SEPARATOR, "/")
             .ends_with("src/bin/tool/parser.rs"),
         "expected the parser module, got: {:?}",
@@ -326,7 +330,7 @@ impl Status {
         report
             .missing()
             .iter()
-            .any(|gap| gap.relative_source_file() == "src/common_types/status.rs"),
+            .any(|gap| gap.relative_source_file == "src/common_types/status.rs"),
         "enum with non-struct body in new() should not be ignored, got: {:?}",
         report.missing()
     );
@@ -397,7 +401,7 @@ pub fn do_work() {}
     let missing_files = report
         .missing()
         .iter()
-        .map(|gap| gap.relative_source_file())
+        .map(|gap| gap.relative_source_file.as_str())
         .collect::<Vec<_>>();
 
     assert!(
@@ -473,8 +477,8 @@ pub fn start_client() {}
     // Assert
     assert!(
         report.missing().iter().any(|gap| {
-            gap.relative_source_file() == "src/implementations/raft/client.rs"
-                && gap.expected_test_file() == "tests/implementations/raft/client_tests.rs"
+            gap.relative_source_file == "src/implementations/raft/client.rs"
+                && gap.expected_test_file == "tests/implementations/raft/client_tests.rs"
         }),
         "expected nested mirrored path to be reported, got: {:?}",
         report.missing()
@@ -506,7 +510,7 @@ pub fn configure() {}
         !report
             .missing()
             .iter()
-            .any(|gap| gap.relative_source_file() == "src/feature/mod.rs"),
+            .any(|gap| gap.relative_source_file == "src/feature/mod.rs"),
         "mod.rs files should be ignored under the current gate policy, got: {:?}",
         report.missing()
     );
@@ -583,7 +587,7 @@ impl Response {
         report
             .missing()
             .iter()
-            .any(|gap| gap.relative_source_file() == "src/common_types/response.rs"),
+            .any(|gap| gap.relative_source_file == "src/common_types/response.rs"),
         "nontrivial new constructor should not be ignored, got: {:?}",
         report.missing()
     );
@@ -727,7 +731,7 @@ impl MessageSource {
         report
             .missing()
             .iter()
-            .any(|gap| gap.relative_source_file() == "src/common_types/message_source.rs"),
+            .any(|gap| gap.relative_source_file == "src/common_types/message_source.rs"),
         "enum with nontrivial impl should not be ignored, got: {:?}",
         report.missing()
     );
@@ -764,7 +768,7 @@ impl Builder {
         report
             .missing()
             .iter()
-            .any(|gap| gap.relative_source_file() == "src/common_types/builder.rs"),
+            .any(|gap| gap.relative_source_file == "src/common_types/builder.rs"),
         "struct with constructor not named new should not be ignored, got: {:?}",
         report.missing()
     );
@@ -835,7 +839,7 @@ impl Snapshot {
         report
             .missing()
             .iter()
-            .any(|gap| gap.relative_source_file() == "src/common_types/snapshot.rs"),
+            .any(|gap| gap.relative_source_file == "src/common_types/snapshot.rs"),
         "struct with multiple impl methods should not be ignored, got: {:?}",
         report.missing()
     );
@@ -870,7 +874,7 @@ impl From<u64> for Convertible {
         report
             .missing()
             .iter()
-            .any(|gap| gap.relative_source_file() == "src/common_types/convertible.rs"),
+            .any(|gap| gap.relative_source_file == "src/common_types/convertible.rs"),
         "struct with trait impl should not be ignored, got: {:?}",
         report.missing()
     );
@@ -1006,7 +1010,7 @@ impl Printable for Displayable {
         report
             .missing()
             .iter()
-            .any(|gap| gap.relative_source_file() == "src/common_types/displayable.rs"),
+            .any(|gap| gap.relative_source_file == "src/common_types/displayable.rs"),
         "trait impl for a single type should not be ignored, got: {:?}",
         report.missing()
     );

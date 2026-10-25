@@ -31,16 +31,15 @@ impl Analyzer {
 
     pub fn analyze_package(&self, package: &PackageContext) -> Result<AnalysisReport> {
         let mut missing = Vec::new();
-        for source_root in package.source_roots() {
+        for source_root in &package.source_roots {
             missing.extend(self.process_source_root(source_root, package)?);
         }
         missing.sort_by(|left, right| {
-            left.package_name().cmp(right.package_name()).then_with(|| {
-                left.relative_source_file()
-                    .cmp(right.relative_source_file())
-            })
+            left.package_name
+                .cmp(&right.package_name)
+                .then_with(|| left.relative_source_file.cmp(&right.relative_source_file))
         });
-        Ok(AnalysisReport::new(package.name().to_string(), missing))
+        Ok(AnalysisReport::new(package.name.clone(), missing))
     }
 
     pub fn analyze_packages(&self, packages: &[PackageContext]) -> Result<Vec<AnalysisReport>> {
@@ -55,7 +54,7 @@ impl Analyzer {
         source_path: &Path,
         package: &PackageContext,
     ) -> Result<Option<MissingTestGap>> {
-        let relative_source = ManifestResolver::relative_file(package.manifest_dir(), source_path);
+        let relative_source = ManifestResolver::relative_file(&package.manifest_dir, source_path);
 
         if self.should_ignore_package_source(package, &relative_source) {
             return Ok(None);
@@ -77,7 +76,7 @@ impl Analyzer {
 
         let expected = self
             .test_file_resolver
-            .expected_test_file(package.manifest_dir(), source_path);
+            .expected_test_file(&package.manifest_dir, source_path);
         let Some(expected_test) = expected else {
             return Ok(None);
         };
@@ -86,11 +85,14 @@ impl Analyzer {
             return Ok(None);
         }
 
-        Ok(Some(MissingTestGap::new(
-            package.name().to_string(),
-            relative_source,
-            ManifestResolver::relative_file(package.manifest_dir(), &expected_test),
-        )))
+        Ok(Some(MissingTestGap {
+            package_name: package.name.clone(),
+            relative_source_file: relative_source,
+            expected_test_file: ManifestResolver::relative_file(
+                &package.manifest_dir,
+                &expected_test,
+            ),
+        }))
     }
 
     // `src/bin/` is where cargo looks for a package's extra binaries, so a file
@@ -126,7 +128,7 @@ impl Analyzer {
         package: &PackageContext,
         relative_source: &str,
     ) -> bool {
-        package.name().ends_with("-validation") && relative_source.starts_with("src/")
+        package.name.ends_with("-validation") && relative_source.starts_with("src/")
     }
 
     fn should_ignore_source_file(&self, relative_source: &str, source: &str) -> Result<bool> {

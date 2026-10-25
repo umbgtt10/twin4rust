@@ -28,9 +28,7 @@ impl ReportPrinter {
         for gap in self.sorted(&missing) {
             println!(
                 "- {}: {} -> {}",
-                gap.package_name(),
-                gap.relative_source_file(),
-                gap.expected_test_file()
+                gap.package_name, gap.relative_source_file, gap.expected_test_file
             );
         }
 
@@ -52,13 +50,10 @@ impl ReportPrinter {
     fn sorted<'a>(&self, missing: &[&'a MissingTestGap]) -> Vec<&'a MissingTestGap> {
         let mut sorted = missing.to_vec();
         sorted.sort_by(|left, right| {
-            left.package_name()
-                .cmp(right.package_name())
-                .then_with(|| {
-                    left.relative_source_file()
-                        .cmp(right.relative_source_file())
-                })
-                .then_with(|| left.expected_test_file().cmp(right.expected_test_file()))
+            left.package_name
+                .cmp(&right.package_name)
+                .then_with(|| left.relative_source_file.cmp(&right.relative_source_file))
+                .then_with(|| left.expected_test_file.cmp(&right.expected_test_file))
         });
         sorted
     }

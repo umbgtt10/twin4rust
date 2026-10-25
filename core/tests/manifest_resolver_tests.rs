@@ -280,10 +280,10 @@ fn relative_file_same_path_returns_empty_string() {
 #[test]
 fn resolve_against_this_package_returns_it_with_its_source_root() {
     // Arrange
-    let config = Config::new(
-        Some(PathBuf::from("Cargo.toml")),
-        vec![String::from("cargo-twin4rust")],
-    );
+    let config = Config {
+        manifest_path: Some(PathBuf::from("Cargo.toml")),
+        packages: vec![String::from("cargo-twin4rust")],
+    };
     let resolver = ManifestResolver::new(config);
 
     // Act
@@ -291,17 +291,17 @@ fn resolve_against_this_package_returns_it_with_its_source_root() {
 
     // Assert
     assert_eq!(packages.len(), 1);
-    assert_eq!(packages[0].name(), "cargo-twin4rust");
-    assert!(!packages[0].source_roots().is_empty());
+    assert_eq!(packages[0].name, "cargo-twin4rust");
+    assert!(!packages[0].source_roots.is_empty());
 }
 
 #[test]
 fn resolve_with_a_package_that_is_not_in_the_manifest_returns_an_error() {
     // Arrange
-    let config = Config::new(
-        Some(PathBuf::from("Cargo.toml")),
-        vec![String::from("no-such-package")],
-    );
+    let config = Config {
+        manifest_path: Some(PathBuf::from("Cargo.toml")),
+        packages: vec![String::from("no-such-package")],
+    };
     let resolver = ManifestResolver::new(config);
 
     // Act

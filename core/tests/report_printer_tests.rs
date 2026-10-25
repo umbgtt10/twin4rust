@@ -24,11 +24,11 @@ fn print_empty_reports_does_not_panic() {
 #[test]
 fn print_reports_with_missing_gaps_does_not_panic() {
     // Arrange
-    let missing = vec![MissingTestGap::new(
-        "pkg".to_string(),
-        "src/lib.rs".to_string(),
-        "tests/lib_tests.rs".to_string(),
-    )];
+    let missing = vec![MissingTestGap {
+        package_name: "pkg".to_string(),
+        relative_source_file: "src/lib.rs".to_string(),
+        expected_test_file: "tests/lib_tests.rs".to_string(),
+    }];
     let reports = vec![AnalysisReport::new("pkg".to_string(), missing)];
     let printer = ReportPrinter::new();
 
@@ -43,22 +43,22 @@ fn print_reports_with_missing_gaps_does_not_panic() {
 fn print_reports_with_multiple_packages_and_gaps_does_not_panic() {
     // Arrange
     let missing_a = vec![
-        MissingTestGap::new(
-            "pkg-a".to_string(),
-            "src/foo.rs".to_string(),
-            "tests/foo_tests.rs".to_string(),
-        ),
-        MissingTestGap::new(
-            "pkg-a".to_string(),
-            "src/bar.rs".to_string(),
-            "tests/bar_tests.rs".to_string(),
-        ),
+        MissingTestGap {
+            package_name: "pkg-a".to_string(),
+            relative_source_file: "src/foo.rs".to_string(),
+            expected_test_file: "tests/foo_tests.rs".to_string(),
+        },
+        MissingTestGap {
+            package_name: "pkg-a".to_string(),
+            relative_source_file: "src/bar.rs".to_string(),
+            expected_test_file: "tests/bar_tests.rs".to_string(),
+        },
     ];
-    let missing_b = vec![MissingTestGap::new(
-        "pkg-b".to_string(),
-        "src/baz.rs".to_string(),
-        "tests/baz_tests.rs".to_string(),
-    )];
+    let missing_b = vec![MissingTestGap {
+        package_name: "pkg-b".to_string(),
+        relative_source_file: "src/baz.rs".to_string(),
+        expected_test_file: "tests/baz_tests.rs".to_string(),
+    }];
     let reports = vec![
         AnalysisReport::new("pkg-a".to_string(), missing_a),
         AnalysisReport::new("pkg-b".to_string(), missing_b),

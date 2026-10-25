@@ -17,10 +17,10 @@ pub struct Runner;
 
 impl Runner {
     pub fn run(args: Args) -> Result<()> {
-        let config = Config::new(
-            args.manifest_path().map(Path::to_path_buf),
-            args.packages().to_vec(),
-        );
+        let config = Config {
+            manifest_path: args.manifest_path().map(Path::to_path_buf),
+            packages: args.packages().to_vec(),
+        };
 
         let resolver = ManifestResolver::new(config);
         let packages = resolver.resolve()?;
