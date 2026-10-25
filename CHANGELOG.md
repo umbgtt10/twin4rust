@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Changed
+- **`AnalysisReport` and `Args` keep their fields private.** In 0.5.1 both
+  had `pub` fields. Each carries behaviour of its own --
+  `AnalysisReport::is_empty` and `missing_count`,
+  `Args::without_cargo_subcommand` -- so under stern4rust's coming
+  `records-and-objects` rule they are objects, and an object's fields are
+  private. `AnalysisReport` is read through `package_name()` and `missing()`;
+  `Args` is parsed as before, or built by `Args::new(manifest_path, packages)`,
+  and read through `manifest_path()` and `packages()`. Code that named either
+  type's fields uses those methods instead.
+
+### Removed
+- `twin4rust::constructor_scan_state`: `constructor_scan_state` is gone:
+  `ConstructorScanState` is a private struct of `trivial_constructor_detector`,
+  its only user, for stern4rust's coming `record-home` rule.
+
 ## [0.5.1] - 2026-10-10
 
 How the code is held to the house rules, and one more gate. No behaviour

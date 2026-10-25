@@ -58,12 +58,16 @@ gaps and exits `1`.
 | `AnalysisReport` | one analyzed package | package name plus its `Vec<MissingTestGap>` |
 | `ConstructorScanState` | one trivial-constructor scan | the one type seen so far, and how many trivial-`new` impls name it |
 
-All four are plain data. `AnalysisReport::is_empty` is what `Runner` folds
-over to decide the exit code, and what `ReportPrinter` counts for
+`PackageContext`, `MissingTestGap` and `ConstructorScanState` are plain data:
+records, their fields `pub`, built by literal. `AnalysisReport` is an object --
+its fields are private, read through `package_name()` and `missing()` -- because
+it answers questions about them: `AnalysisReport::is_empty` is what `Runner`
+folds over to decide the exit code, and what `ReportPrinter` counts for
 `packages_with_gaps`. `ConstructorScanState` is what
 `TrivialConstructorDetector` threads through its walk over a file's items, each
 step handing back the updated state rather than writing it through a `&mut`
-parameter.
+parameter. Nothing else uses it, so it is a private struct in
+`trivial_constructor_detector.rs` rather than a module of its own.
 
 ## Why the behaviourless-impl question is its own type
 
