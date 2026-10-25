@@ -5,7 +5,6 @@
 use syn::{Expr, ImplItem, ImplItemFn, Item, ItemImpl, Stmt, Type};
 
 use crate::behaviourless_impl_detector::BehaviourlessImplDetector;
-use crate::constructor_scan_state::ConstructorScanState;
 
 #[derive(Default)]
 pub struct TrivialConstructorDetector {
@@ -186,4 +185,9 @@ impl TrivialConstructorDetector {
             _ => Some(state),
         }
     }
+}
+
+struct ConstructorScanState {
+    pub type_name: Option<String>,
+    pub constructor_impl_count: usize,
 }

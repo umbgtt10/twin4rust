@@ -7,7 +7,6 @@ pub mod analyzer;
 pub mod args;
 pub mod behaviourless_impl_detector;
 pub mod config;
-pub mod constructor_scan_state;
 pub mod definition_analyzer;
 pub mod humble_adapter_detector;
 pub mod manifest_resolver;
