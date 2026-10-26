@@ -11,8 +11,9 @@ exit codes are compared byte for byte against 0.5.1 -- with one exception: a
 `.rs` file whose path is not UTF-8 now fails the run, naming the file, where
 0.5.1 reported it under a lossy name. Such a file cannot be a `mod`
 (identifiers are UTF-8), only a `#[path]` target. The repository splits
-into a technology-free core and a cli crate (`docs/CORE_CLI_SPLIT.md`), which
-changes how the library is packaged and much of its API.
+into a technology-free core and a cli crate
+(`docs/history/[IMPLEMENTED] CORE_CLI_SPLIT.md`), which changes how the library
+is packaged and much of its API.
 
 ### Added
 - Stage 2 gains a first gate, "Technology-free core": the core's manifest may

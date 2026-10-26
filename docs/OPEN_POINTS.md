@@ -14,8 +14,8 @@ pruning and still cannot produce a mirror path.
 
 `TargetRootCollector` derives source roots from each production target's own
 `src_path` parent, so a `[[bin]]` declared at `path = "tools/probe.rs"`
-contributes `tools/` as a source root and `SourceWalker` duly walks it. But
-`TestFileResolver::expected_test_file` computes the mirror by
+contributes `tools/` as a source root and cli's `WalkdirSourceTree` duly walks
+it. But `TestFileResolver::expected_test_file` computes the mirror by
 `source_file.strip_prefix(manifest_dir/src)`, which fails for any path outside
 `src/`. The resolver returns `None`, and `Analyzer::check_source_file` treats
 `None` as "no expectation" — indistinguishable, at that point, from a

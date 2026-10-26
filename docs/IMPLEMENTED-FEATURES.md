@@ -61,7 +61,9 @@ This document describes the feature set currently shipped by
 ### Packaging
 
 - Published as `cargo-twin4rust` so cargo resolves `cargo twin4rust`; library
-  name is `twin4rust`
+  name is `twin4rust`. Unreleased: the command and the analysis become two
+  crates, the library published as `twin4rust-core` -- see the
+  [CHANGELOG](../CHANGELOG.md)
 - Conditional strip of the subcommand name cargo inserts at `argv[1]`, leaving
   direct invocation and a package named `twin4rust` both intact
 - `--version` and `bin_name`-corrected help output

@@ -14,15 +14,21 @@ The repository is named `twin4rust`, which is not necessarily the crate name.
 
 ## Decision
 
-The crate publishes as `cargo-twin4rust` with library name `twin4rust`, so
-cargo resolves `cargo twin4rust`, and `Args::without_cargo_subcommand` strips
-the subcommand name cargo re-inserts at `argv[1]`.
+The command publishes as `cargo-twin4rust`, so cargo resolves
+`cargo twin4rust`, and `Args::without_cargo_subcommand` strips the subcommand
+name cargo re-inserts at `argv[1]`. The analysis library is named `twin4rust`
+and publishes as `twin4rust-core`.
 
 ## Forcing constraints / Evidence
 
 Cargo discovers subcommands by looking for a `cargo-<name>` binary on `PATH`.
 The package name is therefore fixed by the invocation we want, not chosen
 freely.
+
+The command and the analysis are two crates -- see
+[ADR-TechnologyFreeCore](ADR-TechnologyFreeCore.md): `cargo-twin4rust`
+(`cli/`) holds the binary and a library of its own, `twin4rust_cli`, and the
+analysis library is published by `twin4rust-core` (`core/`).
 
 The sibling tools already resolved this the same way: repo `crap4rust` publishes
 `cargo-crap4rust`, repo `dry4rust` publishes `cargo-dry4rust`. Both keep the
@@ -48,7 +54,7 @@ first real argument.
 
 ## Consequences
 
-The binary is `cargo-twin4rust` and the crate is `cargo-twin4rust`, so
+The binary is `cargo-twin4rust` and its crate is `cargo-twin4rust`, so
 `cargo install cargo-twin4rust` is what users type while `cargo twin4rust` is
 what they run. That mismatch is conventional for cargo subcommands but does
 need saying once in the README.
@@ -58,10 +64,11 @@ show the invocation rather than the binary.
 
 ## Enforcement
 
-`tests/args_tests.rs` covers all four cases: the name present at `argv[1]` is
+`cli/tests/invocation/args_tests.rs` covers all four cases: the name present at `argv[1]` is
 stripped, a direct invocation is untouched, a package *named* `twin4rust` at
 `argv[2]` survives, and an empty argv does not panic.
 
 ## Related
 
+- [ADR-TechnologyFreeCore](ADR-TechnologyFreeCore.md)
 - `docs/ARCHITECTURE.md`

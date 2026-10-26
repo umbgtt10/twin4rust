@@ -38,6 +38,8 @@ points at it.
 cargo install cargo-twin4rust
 ```
 
+The analysis itself is a `no_std` library, `twin4rust-core` (`use twin4rust::…`).
+
 ## Development
 
 ```sh
@@ -49,8 +51,11 @@ Both must be green before a change is complete, and both run the same way on
 Windows, Linux and macOS. Stage 1 is formatting, clippy and tests — cargo
 built-ins only, so it works on a fresh checkout with none of the tools below
 installed. Stage 2 is `cargo xtask stage2`, which runs, in order:
-`cargo stern4rust` (house coding rules, all twenty-two, nothing skipped),
-`cargo shear` (every declared dependency used), `cargo dry4rust` (no duplication in `core/src` beyond `dry4rust-baseline.json`),
+the technology-free core gate (core's manifest, crate-root attributes and the
+std it may not reach), `cargo stern4rust` (house coding rules, all twenty-two,
+nothing skipped), `cargo shear` (every declared dependency used),
+`cargo dry4rust` (no duplication in `core/src` and `cli/src` beyond
+`dry4rust-baseline.json`),
 `cargo crap4rust` (complexity against coverage), **twin4rust self-analysis**, and
 `cargo iceberg4rust` (file risk).
 
@@ -58,8 +63,16 @@ The self-analysis gate runs this tool against its own manifest, built from the
 working tree rather than from an install — a tool that enforces a rule it does
 not satisfy is not worth installing.
 
-The repository is a workspace: `core/` is the published crate, `xtask/` runs the
-gates, and `xtask` is held to the house rules alongside `core`.
+The repository is a workspace of three members, all gated:
+
+| member | package | what it is |
+|---|---|---|
+| `core/` | `twin4rust-core` (library `twin4rust`) | the analysis: `#![no_std]`, no technology, every piece of it behind a port |
+| `cli/` | `cargo-twin4rust` | the command: argument parsing, the composition root, and the adapters for cargo metadata and the file system |
+| `xtask/` | `xtask` | the gates behind `cargo xtask`, held to the house rules alongside the other two |
+
+The core is kept technology-free so that mutation testing it needs nothing but
+its own tests; `.cargo/mutants.toml` scopes cargo-mutants to it.
 
 Everything the two stages need, none of which ships with cargo:
 

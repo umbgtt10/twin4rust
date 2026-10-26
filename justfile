@@ -27,9 +27,10 @@ stage1:
     cargo clippy --workspace --all-targets -- -D warnings
     cargo test --workspace
 
-# House rules, duplication, CRAP, twin4rust self-analysis and file risk, run in
-# that order. The self-analysis gate is twin4rust's alone: the tool is built
-# from this checkout and pointed at core/, so a source file that loses its
-# mirrored test is caught by the very rule the tool exists to enforce.
+# Technology-free core, house rules, dependencies, duplication, CRAP, twin4rust
+# self-analysis and file risk, run in that order. The self-analysis gate is
+# twin4rust's alone: the tool is built from this checkout and pointed at core/
+# and cli/, so a source file that loses its mirrored test is caught by the very
+# rule the tool exists to enforce.
 stage2:
     cargo xtask stage2

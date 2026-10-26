@@ -1,8 +1,28 @@
-# A technology-free core and a cli crate
+# [IMPLEMENTED] A technology-free core and a cli crate
 
-Status: **in progress** -- one commit per slice, in the order below.
+Status: **implemented**, 2026-10-26, in ten signed commits on `main`; the
+record below is the plan as it landed, row by row.
 
-## Why
+| slice | commit |
+|---|---|
+| S0 the record | `5a3f717` |
+| S1 one dry4rust run, exclusions by path | `fcad5d2` |
+| S2 the split | `35e8d22` |
+| S3 `SourceTree` | `5e2be1b` |
+| S4 `WorkspaceReader` | `835f11b` |
+| S5 `ReportRenderer` | `6259cab` |
+| S6 `#![no_std]` | `8e8227a` |
+| S7 the technology-free gate | `3c42a2b` |
+| S8 `.cargo/mutants.toml` | `4a3b3ca` |
+| S9 docs, and this move | the commit that added this file |
+
+---
+
+## A technology-free core and a cli crate
+
+Status: **implemented** -- one commit per slice, in the order below.
+
+### Why
 
 Mutation testing pays for every mutant with a build and a test run. A mutant in
 code that runs `cargo metadata`, walks a disk or prints is slow to kill, and a
@@ -13,7 +33,7 @@ mirrored-path rule, its exemptions and the text report move into a crate that
 touches no technology at all, and mutation testing is scoped to that crate
 alone.
 
-## The shape
+### The shape
 
 The workspace grows a third member:
 
@@ -26,7 +46,7 @@ The workspace grows a third member:
 `cli` depends on `core`, never the reverse. Both published crates share one
 workspace version.
 
-### Ports
+#### Ports
 
 Core declares a trait for everything technological it needs, implemented in
 `cli/src/system/` and, for core's own tests, by in-memory fakes under
@@ -51,7 +71,7 @@ compared byte for byte against 0.5.1 after every slice that touches them. One
 exception is deliberate: a `.rs` file whose path is not UTF-8 fails the run
 naming it, where 0.5.1 reported it under a name it does not have.
 
-### The gate
+#### The gate
 
 A stage-2 gate, first in the run, keeps core technology-free: its manifest may
 name only `quote` and `syn` in any section, its crate root must carry
@@ -59,12 +79,12 @@ name only `quote` and `syn` in any section, its crate root must carry
 `core/tests` may reach `std::{env,fs,io,net,os,process}`, the printing macros,
 the file-system methods or `extern crate std`.
 
-### Mutation testing
+#### Mutation testing
 
 `.cargo/mutants.toml` scopes cargo-mutants to `core/src`; each mutant runs
 core's tests only.
 
-## Slices
+### Slices
 
 | # | slice | status |
 |---|---|---|
@@ -77,9 +97,9 @@ core's tests only.
 | S6 | `#![no_std]`: alloc imports, typed errors; anyhow leaves core | done |
 | S7 | the technology-free gate, first in stage 2 | done |
 | S8 | `.cargo/mutants.toml` | done |
-| S9 | docs, and this record moves to `docs/history/` | |
+| S9 | docs, and this record moves to `docs/history/` | done |
 
-## Tests that move
+### Tests that move
 
 No test is deleted. Tests whose subject moves go with it:
 
