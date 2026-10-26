@@ -3,24 +3,30 @@
 // SPDX-License-Identifier: MIT
 
 use crate::support::in_memory_source_tree::InMemorySourceTree;
-use std::path::PathBuf;
+use crate::support::in_memory_workspace_reader::InMemoryWorkspaceReader;
 use twin4rust::config::Config;
 use twin4rust::runner::Runner;
 
+fn config() -> Config {
+    Config {
+        packages: vec![String::from("alpha"), String::from("beta")],
+    }
+}
+
 #[test]
-fn run_with_a_manifest_that_does_not_exist_returns_an_error() {
+fn run_with_a_workspace_that_cannot_be_read_returns_the_error() {
     // Arrange
-    let config = Config {
-        manifest_path: Some(PathBuf::from("no").join("such").join("Cargo.toml")),
-        packages: vec![],
-    };
+    let reader = InMemoryWorkspaceReader::failing();
     let tree = InMemorySourceTree::new();
 
     // Act
-    let result = Runner::new(&tree).run(&config);
+    let result = Runner::new(&reader, &tree).run(&config());
 
     // Assert
-    assert!(result.is_err());
+    assert_eq!(
+        result.err().map(|failure| failure.to_string()),
+        Some(String::from("failed to read Cargo metadata"))
+    );
 }
 
 #[test]

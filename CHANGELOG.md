@@ -23,11 +23,27 @@ changes how the library is packaged and much of its API.
   version.
 - `args::Args` moves to `twin4rust_cli::invocation::args::Args` and gains
   `config()`, the `Config` the core reads.
-- `runner::Runner::run(Args)` is `Runner::new(&dyn SourceTree)` then
-  `run(&self, &Config)`, which returns the exit code -- 1 when a mirror is
-  missing -- instead of ending the process with `exit(1)`; the argv fix-up, the
-  parsing and the choice of the real file system are
-  `twin4rust_cli::invocation::entry_point::EntryPoint`'s.
+- `runner::Runner::run(Args)` is `Runner::new(&dyn WorkspaceReader, &dyn
+  SourceTree)` then `run(&self, &Config)`, which returns the exit code -- 1 when
+  a mirror is missing -- instead of ending the process with `exit(1)`; the argv
+  fix-up, the parsing and the choice of cargo metadata and the real file system
+  are `twin4rust_cli::invocation::entry_point::EntryPoint`'s.
+- `Config` loses `manifest_path`: the manifest a run reads is
+  `twin4rust_cli::system::cargo_workspace_reader::CargoWorkspaceReader::new(Option<PathBuf>)`'s.
+- `manifest_resolver::ManifestResolver::new(Config)` is `new(&dyn
+  WorkspaceReader)`, the new port `traits::workspace_reader::WorkspaceReader`
+  (`describe`) that `CargoWorkspaceReader` implements over `cargo metadata
+  --no-deps`; `resolve(&self)` is `resolve(&self, &Config)`, and
+  `select_packages` takes the core's
+  `workspace::workspace_description::WorkspaceDescription` and returns
+  `workspace::package_description::PackageDescription`s where it took
+  cargo_metadata's `Metadata` and returned its `Package`s. A workspace that
+  cannot be described fails with
+  `workspace::workspace_read_failure::WorkspaceReadFailure`.
+- `target_root_collector::TargetRootCollector::collect_from_targets` and
+  `is_production_target` take `workspace::target_description::TargetDescription`
+  where they took `cargo_metadata::Target`. The library no longer depends on
+  cargo_metadata, clap or walkdir.
 - `source_walker::SourceWalker` is gone: the new port
   `traits::source_tree::SourceTree` (`rust_files`, `read_source`, `contains`)
   is implemented on disk by `twin4rust_cli::system::walkdir_source_tree::WalkdirSourceTree`.

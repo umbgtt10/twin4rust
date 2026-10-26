@@ -2,97 +2,43 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use cargo_metadata::Target;
-use serde_json::from_value;
 use twin4rust::target_root_collector::TargetRootCollector;
 use twin4rust::workspace::source_path::SourcePath;
+use twin4rust::workspace::target_description::TargetDescription;
 
-fn bench_target(src_path: &str) -> Target {
-    from_value(serde_json::json!({
-        "name": "bench_heavy",
-        "kind": ["bench"],
-        "crate_types": ["lib"],
-        "src_path": src_path,
-        "edition": "2021",
-        "doc": false,
-        "doctest": false,
-        "test": false
-    }))
-    .expect("valid Target")
+fn bench_target(src_path: &str) -> TargetDescription {
+    target("bench", src_path)
 }
 
-fn bin_target(src_path: &str) -> Target {
-    from_value(serde_json::json!({
-        "name": "my_bin",
-        "kind": ["bin"],
-        "crate_types": ["bin"],
-        "src_path": src_path,
-        "edition": "2021",
-        "doc": true,
-        "doctest": false,
-        "test": true
-    }))
-    .expect("valid Target")
+fn bin_target(src_path: &str) -> TargetDescription {
+    target("bin", src_path)
 }
 
-fn custom_build_target(src_path: &str) -> Target {
-    from_value(serde_json::json!({
-        "name": "build_script",
-        "kind": ["custom-build"],
-        "crate_types": ["lib"],
-        "src_path": src_path,
-        "edition": "2021",
-        "doc": false,
-        "doctest": false,
-        "test": false
-    }))
-    .expect("valid Target")
+fn custom_build_target(src_path: &str) -> TargetDescription {
+    target("custom-build", src_path)
 }
 
-fn example_target(src_path: &str) -> Target {
-    from_value(serde_json::json!({
-        "name": "example_demo",
-        "kind": ["example"],
-        "crate_types": ["lib"],
-        "src_path": src_path,
-        "edition": "2021",
-        "doc": false,
-        "doctest": false,
-        "test": false
-    }))
-    .expect("valid Target")
+fn example_target(src_path: &str) -> TargetDescription {
+    target("example", src_path)
 }
 
-fn lib_target(src_path: &str) -> Target {
-    from_value(serde_json::json!({
-        "name": "my_crate",
-        "kind": ["lib"],
-        "crate_types": ["lib"],
-        "src_path": src_path,
-        "edition": "2021",
-        "doc": true,
-        "doctest": true,
-        "test": true
-    }))
-    .expect("valid Target")
+fn lib_target(src_path: &str) -> TargetDescription {
+    target("lib", src_path)
 }
 
 fn path(text: &str) -> SourcePath {
     SourcePath::new(String::from(text))
 }
 
-fn test_target(src_path: &str) -> Target {
-    from_value(serde_json::json!({
-        "name": "test_integration",
-        "kind": ["test"],
-        "crate_types": ["lib"],
-        "src_path": src_path,
-        "edition": "2021",
-        "doc": false,
-        "doctest": false,
-        "test": true
-    }))
-    .expect("valid Target")
+fn target(kind: &str, src_path: &str) -> TargetDescription {
+    TargetDescription {
+        kinds: vec![String::from(kind)],
+        src_path: path(src_path),
+    }
+}
+
+fn test_target(src_path: &str) -> TargetDescription {
+    target("test", src_path)
 }
 
 #[test]

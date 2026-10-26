@@ -2,23 +2,23 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use std::path::MAIN_SEPARATOR;
-
 use anyhow::{Context, Result, bail};
-use cargo_metadata::{Metadata, MetadataCommand, Package};
 
 use crate::config::Config;
 use crate::package_context::PackageContext;
 use crate::target_root_collector::TargetRootCollector;
+use crate::traits::workspace_reader::WorkspaceReader;
+use crate::workspace::package_description::PackageDescription;
 use crate::workspace::source_path::SourcePath;
+use crate::workspace::workspace_description::WorkspaceDescription;
 
-pub struct ManifestResolver {
-    config: Config,
+pub struct ManifestResolver<'a> {
+    workspace_reader: &'a dyn WorkspaceReader,
 }
 
-impl ManifestResolver {
-    pub fn new(config: Config) -> Self {
-        Self { config }
+impl<'a> ManifestResolver<'a> {
+    pub fn new(workspace_reader: &'a dyn WorkspaceReader) -> Self {
+        Self { workspace_reader }
     }
 
     pub fn relative_file(base_dir: &SourcePath, file_path: &SourcePath) -> String {
@@ -28,16 +28,9 @@ impl ManifestResolver {
             .replace('\\', "/")
     }
 
-    pub fn resolve(&self) -> Result<Vec<PackageContext>> {
-        let mut command = MetadataCommand::new();
-        command.no_deps();
-
-        if let Some(manifest_path) = &self.config.manifest_path {
-            command.manifest_path(manifest_path);
-        }
-
-        let metadata = command.exec().context("failed to read Cargo metadata")?;
-        let packages = Self::select_packages(&metadata, &self.config.packages)?;
+    pub fn resolve(&self, config: &Config) -> Result<Vec<PackageContext>> {
+        let workspace = self.workspace_reader.describe()?;
+        let packages = Self::select_packages(&workspace, &config.packages)?;
 
         packages
             .into_iter()
@@ -45,17 +38,17 @@ impl ManifestResolver {
             .collect()
     }
 
-    pub fn select_packages<'a>(
-        metadata: &'a Metadata,
+    pub fn select_packages<'w>(
+        workspace: &'w WorkspaceDescription,
         requested: &[String],
-    ) -> Result<Vec<&'a Package>> {
+    ) -> Result<Vec<&'w PackageDescription>> {
         if !requested.is_empty() {
             let mut selected = Vec::new();
             for package_name in requested {
-                let package = metadata
+                let package = workspace
                     .packages
                     .iter()
-                    .find(|package| package.name == package_name)
+                    .find(|package| &package.name == package_name)
                     .with_context(|| {
                         format!("package {package_name} was not found in the manifest")
                     })?;
@@ -64,15 +57,21 @@ impl ManifestResolver {
             return Ok(selected);
         }
 
-        if let Some(root) = metadata.root_package() {
+        if let Some(root) = workspace.root_package.as_ref().and_then(|root| {
+            workspace
+                .packages
+                .iter()
+                .find(|package| &package.name == root)
+        }) {
             return Ok(vec![root]);
         }
 
         bail!("manifest contains multiple packages; pass --package <name>")
     }
 
-    fn build_package_context(package: &Package) -> Result<PackageContext> {
-        let manifest_dir = Self::source_path(package.manifest_path.as_str())
+    fn build_package_context(package: &PackageDescription) -> Result<PackageContext> {
+        let manifest_dir = package
+            .manifest_path
             .parent()
             .context("package manifest has no parent directory")?;
 
@@ -80,7 +79,7 @@ impl ManifestResolver {
         root_collector.collect_from_targets(&package.targets);
         root_collector.ensure_fallback(&manifest_dir);
         let source_roots = root_collector.into_roots();
-        let name = package.name.to_string();
+        let name = package.name.clone();
         let source_roots = source_roots
             .into_iter()
             .filter(|root| !Self::should_ignore_source_root(&name, &manifest_dir, root))
@@ -99,11 +98,5 @@ impl ManifestResolver {
         source_root: &SourcePath,
     ) -> bool {
         package_name.ends_with("-validation") && *source_root == manifest_dir.join("src")
-    }
-
-    // cargo's paths are UTF-8, so nothing is lost; the platform's separator
-    // becomes the core's `/`.
-    fn source_path(text: &str) -> SourcePath {
-        SourcePath::new(text.replace(MAIN_SEPARATOR, "/"))
     }
 }

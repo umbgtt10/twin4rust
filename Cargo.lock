@@ -87,7 +87,9 @@ name = "cargo-twin4rust"
 version = "0.5.1"
 dependencies = [
  "anyhow",
+ "cargo_metadata",
  "clap",
+ "serde_json",
  "tempfile",
  "twin4rust-core",
  "walkdir",
@@ -399,9 +401,7 @@ name = "twin4rust-core"
 version = "0.5.1"
 dependencies = [
  "anyhow",
- "cargo_metadata",
  "quote",
- "serde_json",
  "syn 2.0.119",
 ]
 

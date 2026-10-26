@@ -2,7 +2,6 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use std::path::PathBuf;
 use twin4rust::analysis_report::AnalysisReport;
 use twin4rust::config::Config;
 use twin4rust::missing_test_gap::MissingTestGap;
@@ -119,7 +118,6 @@ fn analysis_report_partial_eq_compares_fields() {
 fn config_clone_produces_independent_copy() {
     // Arrange
     let config = Config {
-        manifest_path: Some(PathBuf::from("Cargo.toml")),
         packages: vec!["pkg".to_string()],
     };
 
@@ -127,7 +125,6 @@ fn config_clone_produces_independent_copy() {
     let cloned = config.clone();
 
     // Assert
-    assert_eq!(cloned.manifest_path, config.manifest_path);
     assert_eq!(cloned.packages, config.packages);
 }
 

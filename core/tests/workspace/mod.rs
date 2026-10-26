@@ -4,3 +4,4 @@
 
 pub mod source_path_tests;
 pub mod source_read_failure_tests;
+pub mod workspace_read_failure_tests;

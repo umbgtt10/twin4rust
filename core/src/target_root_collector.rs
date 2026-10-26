@@ -3,11 +3,9 @@
 // SPDX-License-Identifier: MIT
 
 use std::collections::BTreeSet;
-use std::path::MAIN_SEPARATOR;
-
-use cargo_metadata::Target;
 
 use crate::workspace::source_path::SourcePath;
+use crate::workspace::target_description::TargetDescription;
 
 #[derive(Default)]
 pub struct TargetRootCollector {
@@ -21,13 +19,13 @@ impl TargetRootCollector {
         }
     }
 
-    pub fn collect_from_targets(&mut self, targets: &[Target]) {
+    pub fn collect_from_targets(&mut self, targets: &[TargetDescription]) {
         for target in targets {
             if !Self::is_production_target(target) {
                 continue;
             }
 
-            if let Some(parent) = Self::source_path(target.src_path.as_str()).parent() {
+            if let Some(parent) = target.src_path.parent() {
                 self.source_roots.insert(parent);
             }
         }
@@ -48,21 +46,16 @@ impl TargetRootCollector {
             .collect()
     }
 
-    pub fn is_production_target(target: &Target) -> bool {
-        let kinds = target
-            .kind
-            .iter()
-            .map(|kind| kind.to_string())
-            .collect::<Vec<_>>();
-
-        if kinds
+    pub fn is_production_target(target: &TargetDescription) -> bool {
+        if target
+            .kinds
             .iter()
             .any(|kind| matches!(kind.as_str(), "test" | "bench" | "example" | "custom-build"))
         {
             return false;
         }
 
-        kinds.iter().any(|kind| {
+        target.kinds.iter().any(|kind| {
             matches!(
                 kind.as_str(),
                 "lib" | "bin" | "proc-macro" | "rlib" | "dylib" | "cdylib" | "staticlib"
@@ -78,11 +71,5 @@ impl TargetRootCollector {
         roots
             .iter()
             .any(|other| other != candidate && candidate.strip_prefix(other).is_some())
-    }
-
-    // cargo's paths are UTF-8, so nothing is lost; the platform's separator
-    // becomes the core's `/`.
-    fn source_path(text: &str) -> SourcePath {
-        SourcePath::new(text.replace(MAIN_SEPARATOR, "/"))
     }
 }

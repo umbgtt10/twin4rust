@@ -2,153 +2,60 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use cargo_metadata::Metadata;
-use cargo_metadata::Target;
-use serde_json::from_value;
-use std::path::PathBuf;
+use crate::support::in_memory_workspace_reader::InMemoryWorkspaceReader;
+use crate::support::in_memory_workspace_reader::library_package;
 use twin4rust::config::Config;
 use twin4rust::manifest_resolver::ManifestResolver;
 use twin4rust::target_root_collector::TargetRootCollector;
+use twin4rust::workspace::package_description::PackageDescription;
 use twin4rust::workspace::source_path::SourcePath;
+use twin4rust::workspace::target_description::TargetDescription;
+use twin4rust::workspace::workspace_description::WorkspaceDescription;
 
-fn bench_target(src_path: &str) -> Target {
-    from_value(serde_json::json!({
-        "name": "bench_heavy",
-        "kind": ["bench"],
-        "crate_types": ["lib"],
-        "src_path": src_path,
-        "edition": "2021",
-        "doc": false,
-        "doctest": false,
-        "test": false
-    }))
-    .expect("valid Target")
+fn bench_target(src_path: &str) -> TargetDescription {
+    target("bench", src_path)
 }
 
-fn bin_target(src_path: &str) -> Target {
-    from_value(serde_json::json!({
-        "name": "my_bin",
-        "kind": ["bin"],
-        "crate_types": ["bin"],
-        "src_path": src_path,
-        "edition": "2021",
-        "doc": true,
-        "doctest": false,
-        "test": true
-    }))
-    .expect("valid Target")
+fn bin_target(src_path: &str) -> TargetDescription {
+    target("bin", src_path)
 }
 
-fn build_target(src_path: &str) -> Target {
-    from_value(serde_json::json!({
-        "name": "build_script",
-        "kind": ["custom-build"],
-        "crate_types": ["lib"],
-        "src_path": src_path,
-        "edition": "2021",
-        "doc": false,
-        "doctest": false,
-        "test": false
-    }))
-    .expect("valid Target")
+fn build_target(src_path: &str) -> TargetDescription {
+    target("custom-build", src_path)
 }
 
-fn example_target(src_path: &str) -> Target {
-    from_value(serde_json::json!({
-        "name": "example_demo",
-        "kind": ["example"],
-        "crate_types": ["lib"],
-        "src_path": src_path,
-        "edition": "2021",
-        "doc": false,
-        "doctest": false,
-        "test": false
-    }))
-    .expect("valid Target")
+fn example_target(src_path: &str) -> TargetDescription {
+    target("example", src_path)
 }
 
-fn lib_target(src_path: &str) -> Target {
-    from_value(serde_json::json!({
-        "name": "my_crate",
-        "kind": ["lib"],
-        "crate_types": ["lib"],
-        "src_path": src_path,
-        "edition": "2021",
-        "doc": true,
-        "doctest": true,
-        "test": true
-    }))
-    .expect("valid Target")
-}
-
-fn metadata_with_package(name: &str, root_id: Option<&str>) -> Metadata {
-    let package_json = serde_json::json!({
-        "name": name,
-        "version": "0.1.0",
-        "id": format!("{} 0.1.0 (path+file:///project/{})", name, name),
-        "license": null,
-        "license_file": null,
-        "description": null,
-        "source": null,
-        "dependencies": [],
-        "targets": [],
-        "features": {},
-        "manifest_path": format!("/project/{}/Cargo.toml", name),
-        "metadata": null,
-        "publish": null,
-        "authors": [],
-        "categories": [],
-        "keywords": [],
-        "readme": null,
-        "repository": null,
-        "homepage": null,
-        "documentation": null,
-        "edition": "2021",
-        "links": null
-    });
-
-    let resolve = root_id.map(|id| {
-        serde_json::json!({
-            "nodes": [{
-                "id": id,
-                "dependencies": [],
-                "deps": []
-            }],
-            "root": id
-        })
-    });
-
-    let workspace_members: Vec<String> = root_id.into_iter().map(|id| id.to_string()).collect();
-
-    from_value(serde_json::json!({
-        "packages": [package_json],
-        "workspace_members": workspace_members,
-        "workspace_default_members": workspace_members,
-        "resolve": resolve,
-        "target_directory": "/project/target",
-        "version": 1,
-        "workspace_root": "/project",
-        "metadata": null
-    }))
-    .expect("valid Metadata")
+fn lib_target(src_path: &str) -> TargetDescription {
+    target("lib", src_path)
 }
 
 fn path(text: &str) -> SourcePath {
     SourcePath::new(String::from(text))
 }
 
-fn test_target(src_path: &str) -> Target {
-    from_value(serde_json::json!({
-        "name": "test_integration",
-        "kind": ["test"],
-        "crate_types": ["lib"],
-        "src_path": src_path,
-        "edition": "2021",
-        "doc": false,
-        "doctest": false,
-        "test": true
-    }))
-    .expect("valid Target")
+fn target(kind: &str, src_path: &str) -> TargetDescription {
+    TargetDescription {
+        kinds: vec![String::from(kind)],
+        src_path: path(src_path),
+    }
+}
+
+fn test_target(src_path: &str) -> TargetDescription {
+    target("test", src_path)
+}
+
+fn workspace_with_package(name: &str, root: Option<&str>) -> WorkspaceDescription {
+    WorkspaceDescription {
+        packages: vec![PackageDescription {
+            name: String::from(name),
+            manifest_path: path(&format!("/project/{name}/Cargo.toml")),
+            targets: vec![],
+        }],
+        root_package: root.map(String::from),
+    }
 }
 
 #[test]
@@ -282,46 +189,107 @@ fn relative_file_same_path_returns_empty_string() {
 }
 
 #[test]
-fn resolve_against_this_package_returns_it_with_its_source_root() {
+fn resolve_for_a_package_with_no_production_target_falls_back_to_its_src() {
     // Arrange
-    let config = Config {
-        manifest_path: Some(PathBuf::from("Cargo.toml")),
-        packages: vec![String::from("twin4rust-core")],
-    };
-    let resolver = ManifestResolver::new(config);
+    let reader = InMemoryWorkspaceReader::new(workspace_with_package("foo", Some("foo")));
+    let config = Config { packages: vec![] };
 
     // Act
-    let packages = resolver.resolve().expect("resolve packages");
+    let packages = ManifestResolver::new(&reader)
+        .resolve(&config)
+        .expect("resolve packages");
 
     // Assert
     assert_eq!(packages.len(), 1);
-    assert_eq!(packages[0].name, "twin4rust-core");
-    assert!(!packages[0].source_roots.is_empty());
+    assert_eq!(packages[0].manifest_dir, path("/project/foo"));
+    assert_eq!(packages[0].source_roots, vec![path("/project/foo/src")]);
+}
+
+#[test]
+fn resolve_for_a_validation_package_drops_its_src_root() {
+    // Arrange
+    let reader = InMemoryWorkspaceReader::new(WorkspaceDescription {
+        packages: vec![library_package("raft-validation", "/w/raft-validation")],
+        root_package: None,
+    });
+    let config = Config {
+        packages: vec![String::from("raft-validation")],
+    };
+
+    // Act
+    let packages = ManifestResolver::new(&reader)
+        .resolve(&config)
+        .expect("resolve packages");
+
+    // Assert
+    assert_eq!(packages[0].name, "raft-validation");
+    assert!(packages[0].source_roots.is_empty());
 }
 
 #[test]
 fn resolve_with_a_package_that_is_not_in_the_manifest_returns_an_error() {
     // Arrange
+    let reader = InMemoryWorkspaceReader::new(workspace_with_package("foo", None));
     let config = Config {
-        manifest_path: Some(PathBuf::from("Cargo.toml")),
         packages: vec![String::from("no-such-package")],
     };
-    let resolver = ManifestResolver::new(config);
+    let resolver = ManifestResolver::new(&reader);
 
     // Act
-    let result = resolver.resolve();
+    let result = resolver.resolve(&config);
 
     // Assert
     assert!(result.is_err());
 }
 
 #[test]
-fn select_packages_with_requested_name_returns_matching() {
+fn resolve_with_a_requested_package_returns_it_with_its_source_root() {
     // Arrange
-    let metadata = metadata_with_package("foo", None);
+    let reader = InMemoryWorkspaceReader::new(WorkspaceDescription {
+        packages: vec![
+            library_package("alpha", "/w/alpha"),
+            library_package("beta", "/w/beta"),
+        ],
+        root_package: None,
+    });
+    let config = Config {
+        packages: vec![String::from("beta")],
+    };
 
     // Act
-    let packages = ManifestResolver::select_packages(&metadata, &["foo".to_string()])
+    let packages = ManifestResolver::new(&reader)
+        .resolve(&config)
+        .expect("resolve packages");
+
+    // Assert
+    assert_eq!(packages.len(), 1);
+    assert_eq!(packages[0].name, "beta");
+    assert_eq!(packages[0].source_roots, vec![path("/w/beta/src")]);
+}
+
+#[test]
+fn resolve_with_a_workspace_that_cannot_be_read_returns_the_error() {
+    // Arrange
+    let reader = InMemoryWorkspaceReader::failing();
+    let config = Config { packages: vec![] };
+
+    // Act
+    let result = ManifestResolver::new(&reader).resolve(&config);
+
+    // Assert
+    assert_eq!(
+        result.err().map(|failure| failure.to_string()),
+        Some(String::from("failed to read Cargo metadata"))
+    );
+}
+
+#[test]
+fn select_packages_with_requested_name_returns_matching() {
+    // Arrange
+    let workspace = workspace_with_package("foo", None);
+
+    // Act
+    let packages = ManifestResolver::select_packages(&workspace, &["foo".to_string()])
         .expect("select_packages");
 
     // Assert
@@ -332,25 +300,39 @@ fn select_packages_with_requested_name_returns_matching() {
 #[test]
 fn select_packages_with_unknown_name_returns_error() {
     // Arrange
-    let metadata = metadata_with_package("foo", None);
+    let workspace = workspace_with_package("foo", None);
 
     // Act
-    let result = ManifestResolver::select_packages(&metadata, &["nonexistent".to_string()]);
+    let result = ManifestResolver::select_packages(&workspace, &["nonexistent".to_string()]);
 
     // Assert
     assert!(result.is_err());
 }
 
 #[test]
-fn select_packages_without_requested_uses_root() {
+fn select_packages_without_requested_and_without_a_root_asks_for_a_package() {
     // Arrange
-    let metadata = metadata_with_package(
-        "root-pkg",
-        Some("root-pkg 0.1.0 (path+file:///project/root-pkg)"),
-    );
+    let workspace = workspace_with_package("foo", None);
 
     // Act
-    let packages = ManifestResolver::select_packages(&metadata, &[]).expect("select_packages");
+    let result = ManifestResolver::select_packages(&workspace, &[]);
+
+    // Assert
+    assert_eq!(
+        result.err().map(|failure| failure.to_string()),
+        Some(String::from(
+            "manifest contains multiple packages; pass --package <name>"
+        ))
+    );
+}
+
+#[test]
+fn select_packages_without_requested_uses_root() {
+    // Arrange
+    let workspace = workspace_with_package("root-pkg", Some("root-pkg"));
+
+    // Act
+    let packages = ManifestResolver::select_packages(&workspace, &[]).expect("select_packages");
 
     // Assert
     assert_eq!(packages.len(), 1);

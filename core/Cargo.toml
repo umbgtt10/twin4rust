@@ -26,9 +26,5 @@ workspace = true
 
 [dependencies]
 anyhow = { workspace = true }
-cargo_metadata = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true }
-
-[dev-dependencies]
-serde_json = { workspace = true }
