@@ -14,6 +14,15 @@ exit codes are compared byte for byte against 0.5.1 -- with one exception: a
 into a technology-free core and a cli crate (`docs/CORE_CLI_SPLIT.md`), which
 changes how the library is packaged and much of its API.
 
+### Added
+- Stage 2 gains a first gate, "Technology-free core": the core's manifest may
+  name only `quote` and `syn`, in any section; its crate root must carry
+  `#![no_std]` and `#![forbid(unsafe_code)]`; and no file under `core/src` or
+  `core/tests` may reach `std::{env,fs,io,net,os,process}`, the printing
+  macros, the file-system methods of `Path` or `extern crate std`. dry4rust
+  makes one run over both published crates' sources, and crap4rust, the
+  self-analysis and iceberg4rust measure both.
+
 ### Changed (packages)
 - `cargo-twin4rust` is now the command-line crate (`cli/`): the
   `cargo-twin4rust` binary and a library, `twin4rust_cli`. The analysis library
