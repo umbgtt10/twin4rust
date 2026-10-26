@@ -2,7 +2,8 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use std::collections::BTreeSet;
+use alloc::collections::BTreeSet;
+use alloc::vec::Vec;
 
 use crate::workspace::source_path::SourcePath;
 use crate::workspace::target_description::TargetDescription;

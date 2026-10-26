@@ -2,7 +2,10 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
+#![no_std]
 #![forbid(unsafe_code)]
+
+extern crate alloc;
 
 pub mod analysis_report;
 pub mod analyzer;
@@ -13,6 +16,8 @@ pub mod humble_adapter_detector;
 pub mod manifest_resolver;
 pub mod missing_test_gap;
 pub mod package_context;
+pub mod parse_failure;
+pub mod run_failure;
 pub mod run_outcome;
 pub mod runner;
 pub mod target_root_collector;

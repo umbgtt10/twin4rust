@@ -51,6 +51,13 @@ changes how the library is packaged and much of its API.
   `is_production_target` take `workspace::target_description::TargetDescription`
   where they took `cargo_metadata::Target`. The library no longer depends on
   cargo_metadata, clap or walkdir.
+- The library is `#![no_std]`, with `alloc`, and depends on quote and syn
+  only: anyhow leaves it. `Runner::run`, `ManifestResolver::resolve` and
+  `select_packages`, and `Analyzer::analyze_package` and `analyze_packages`
+  fail with `run_failure::RunFailure` instead of `anyhow::Error`;
+  `DefinitionAnalyzer::is_definition_only_source` and `mod_file_is_import_only`
+  with `parse_failure::ParseFailure`. Every message reads as before, over the
+  same cause.
 - `source_walker::SourceWalker` is gone: the new port
   `traits::source_tree::SourceTree` (`rust_files`, `read_source`, `contains`)
   is implemented on disk by `twin4rust_cli::system::walkdir_source_tree::WalkdirSourceTree`.

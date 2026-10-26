@@ -2,11 +2,10 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use anyhow::Result;
-
 use crate::analyzer::Analyzer;
 use crate::config::Config;
 use crate::manifest_resolver::ManifestResolver;
+use crate::run_failure::RunFailure;
 use crate::run_outcome::RunOutcome;
 use crate::traits::report_renderer::ReportRenderer;
 use crate::traits::source_tree::SourceTree;
@@ -33,7 +32,7 @@ impl<'a> Runner<'a> {
 
     // Printing the output, and turning the verdict into an exit code, is the
     // caller's.
-    pub fn run(&self, config: &Config) -> Result<RunOutcome> {
+    pub fn run(&self, config: &Config) -> Result<RunOutcome, RunFailure> {
         let packages = self.resolver.resolve(config)?;
         let reports = self.analyzer.analyze_packages(&packages)?;
 

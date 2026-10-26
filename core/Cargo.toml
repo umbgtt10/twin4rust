@@ -25,6 +25,5 @@ path = "tests/all_tests.rs"
 workspace = true
 
 [dependencies]
-anyhow = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true }

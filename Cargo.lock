@@ -400,7 +400,6 @@ dependencies = [
 name = "twin4rust-core"
 version = "0.5.1"
 dependencies = [
- "anyhow",
  "quote",
  "syn 2.0.119",
 ]

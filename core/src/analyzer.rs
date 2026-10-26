@@ -2,13 +2,14 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use anyhow::Result;
+use alloc::vec::Vec;
 
 use crate::analysis_report::AnalysisReport;
 use crate::definition_analyzer::DefinitionAnalyzer;
 use crate::manifest_resolver::ManifestResolver;
 use crate::missing_test_gap::MissingTestGap;
 use crate::package_context::PackageContext;
+use crate::run_failure::RunFailure;
 use crate::test_file_resolver::TestFileResolver;
 use crate::traits::source_tree::SourceTree;
 use crate::workspace::source_path::SourcePath;
@@ -28,7 +29,7 @@ impl<'a> Analyzer<'a> {
         }
     }
 
-    pub fn analyze_package(&self, package: &PackageContext) -> Result<AnalysisReport> {
+    pub fn analyze_package(&self, package: &PackageContext) -> Result<AnalysisReport, RunFailure> {
         let mut missing = Vec::new();
         for source_root in &package.source_roots {
             missing.extend(self.process_source_root(source_root, package)?);
@@ -41,7 +42,10 @@ impl<'a> Analyzer<'a> {
         Ok(AnalysisReport::new(package.name.clone(), missing))
     }
 
-    pub fn analyze_packages(&self, packages: &[PackageContext]) -> Result<Vec<AnalysisReport>> {
+    pub fn analyze_packages(
+        &self,
+        packages: &[PackageContext],
+    ) -> Result<Vec<AnalysisReport>, RunFailure> {
         packages
             .iter()
             .map(|pkg| self.analyze_package(pkg))
@@ -52,7 +56,7 @@ impl<'a> Analyzer<'a> {
         &self,
         source_path: &SourcePath,
         package: &PackageContext,
-    ) -> Result<Option<MissingTestGap>> {
+    ) -> Result<Option<MissingTestGap>, RunFailure> {
         let relative_source = ManifestResolver::relative_file(&package.manifest_dir, source_path);
 
         if self.should_ignore_package_source(package, &relative_source) {
@@ -108,7 +112,7 @@ impl<'a> Analyzer<'a> {
         &self,
         source_root: &SourcePath,
         package: &PackageContext,
-    ) -> Result<Vec<MissingTestGap>> {
+    ) -> Result<Vec<MissingTestGap>, RunFailure> {
         let mut missing = Vec::new();
         for source_path in self.source_tree.rust_files(source_root)? {
             if let Some(gap) = self.check_source_file(&source_path, package)? {
@@ -126,13 +130,17 @@ impl<'a> Analyzer<'a> {
         package.name.ends_with("-validation") && relative_source.starts_with("src/")
     }
 
-    fn should_ignore_source_file(&self, relative_source: &str, source: &str) -> Result<bool> {
+    fn should_ignore_source_file(
+        &self,
+        relative_source: &str,
+        source: &str,
+    ) -> Result<bool, RunFailure> {
         if Self::is_entry_point(relative_source) {
             return Ok(true);
         }
 
         if relative_source.ends_with("/mod.rs") {
-            return self.definition_analyzer.mod_file_is_import_only(source);
+            return Ok(self.definition_analyzer.mod_file_is_import_only(source)?);
         }
 
         Ok(false)

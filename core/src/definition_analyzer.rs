@@ -2,12 +2,15 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use anyhow::{Context, Result};
+use alloc::string::ToString;
+use alloc::vec::Vec;
+
 use quote::ToTokens;
 use syn::{Attribute, File, Item, ItemImpl, ItemMod, parse_file};
 
 use crate::behaviourless_impl_detector::BehaviourlessImplDetector;
 use crate::humble_adapter_detector::HumbleAdapterDetector;
+use crate::parse_failure::ParseFailure;
 use crate::trivial_constructor_detector::TrivialConstructorDetector;
 
 #[derive(Default)]
@@ -29,13 +32,13 @@ impl DefinitionAnalyzer {
         })
     }
 
-    pub fn is_definition_only_source(&self, source: &str) -> Result<bool> {
-        let syntax = parse_file(source).context("failed to parse Rust source")?;
+    pub fn is_definition_only_source(&self, source: &str) -> Result<bool, ParseFailure> {
+        let syntax = parse_file(source).map_err(|cause| ParseFailure { cause })?;
         Ok(self.file_is_definition_only(&syntax))
     }
 
-    pub fn mod_file_is_import_only(&self, source: &str) -> Result<bool> {
-        let syntax = parse_file(source).context("failed to parse Rust source")?;
+    pub fn mod_file_is_import_only(&self, source: &str) -> Result<bool, ParseFailure> {
+        let syntax = parse_file(source).map_err(|cause| ParseFailure { cause })?;
         let items = self.top_level_non_test_items(&syntax.items);
         Ok(items.iter().all(|item| {
             matches!(

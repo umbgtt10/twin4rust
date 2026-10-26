@@ -2,6 +2,9 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
+use alloc::string::String;
+use alloc::vec::Vec;
+
 use crate::missing_test_gap::MissingTestGap;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

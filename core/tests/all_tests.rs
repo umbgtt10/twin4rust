@@ -8,6 +8,8 @@ pub mod behaviourless_impl_detector_tests;
 pub mod definition_analyzer_tests;
 pub mod humble_adapter_detector_tests;
 pub mod manifest_resolver_tests;
+pub mod parse_failure_tests;
+pub mod run_failure_tests;
 pub mod runner_tests;
 pub mod support;
 pub mod target_root_collector_tests;
