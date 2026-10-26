@@ -24,10 +24,17 @@ changes how the library is packaged and much of its API.
 - `args::Args` moves to `twin4rust_cli::invocation::args::Args` and gains
   `config()`, the `Config` the core reads.
 - `runner::Runner::run(Args)` is `Runner::new(&dyn WorkspaceReader, &dyn
-  SourceTree)` then `run(&self, &Config)`, which returns the exit code -- 1 when
-  a mirror is missing -- instead of ending the process with `exit(1)`; the argv
-  fix-up, the parsing and the choice of cargo metadata and the real file system
-  are `twin4rust_cli::invocation::entry_point::EntryPoint`'s.
+  SourceTree, &dyn ReportRenderer)` then `run(&self, &Config)`, which returns a
+  `run_outcome::RunOutcome` -- the rendered report and whether any mirror is
+  missing -- instead of printing it and ending the process with `exit(1)`. The
+  argv fix-up, the parsing, the choice of cargo metadata and the real file
+  system, printing and the exit code are
+  `twin4rust_cli::invocation::entry_point::EntryPoint`'s.
+- `report_printer::ReportPrinter` is
+  `text_report_renderer::TextReportRenderer`, an implementation of the new port
+  `traits::report_renderer::ReportRenderer`: `print(&self, &[AnalysisReport])`,
+  which wrote to stdout, is `render(&self, &[AnalysisReport]) -> String`, the
+  same bytes.
 - `Config` loses `manifest_path`: the manifest a run reads is
   `twin4rust_cli::system::cargo_workspace_reader::CargoWorkspaceReader::new(Option<PathBuf>)`'s.
 - `manifest_resolver::ManifestResolver::new(Config)` is `new(&dyn
