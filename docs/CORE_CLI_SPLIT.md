@@ -69,7 +69,7 @@ core's tests only.
 | # | slice | status |
 |---|---|---|
 | S0 | this record | done |
-| S1 | `DryGate`: one run over the workspace, with the trees it must not judge excluded by full path | |
+| S1 | `DryGate`: one run over the workspace, with the trees it must not judge excluded by full path | done |
 | S2 | the split: `cli` takes `main.rs`, `Args` and a new `EntryPoint`; core is renamed; one workspace version; `[workspace.lints]` forbids unsafe code; `Runner::run` returns an exit code instead of calling `exit` | |
 | S3 | the `SourceTree` port and `SourcePath`; `Analyzer` reads through it; the walker becomes cli's `WalkdirSourceTree` | |
 | S4 | the `WorkspaceReader` port and core's workspace records; `CargoWorkspaceReader` in cli | |
