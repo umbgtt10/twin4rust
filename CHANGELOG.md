@@ -22,6 +22,8 @@ changes how the library is packaged and much of its API.
   macros, the file-system methods of `Path` or `extern crate std`. dry4rust
   makes one run over both published crates' sources, and crap4rust, the
   self-analysis and iceberg4rust measure both.
+- `.cargo/mutants.toml` scopes cargo-mutants to `core/src`, each mutant
+  tested by core's own tests: 244 mutants.
 
 ### Changed (packages)
 - `cargo-twin4rust` is now the command-line crate (`cli/`): the

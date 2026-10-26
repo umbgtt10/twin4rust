@@ -76,7 +76,7 @@ core's tests only.
 | S5 | the `ReportRenderer` port and `RunOutcome`: the text report in core, printing and the exit code in `EntryPoint` | done |
 | S6 | `#![no_std]`: alloc imports, typed errors; anyhow leaves core | done |
 | S7 | the technology-free gate, first in stage 2 | done |
-| S8 | `.cargo/mutants.toml` | |
+| S8 | `.cargo/mutants.toml` | done |
 | S9 | docs, and this record moves to `docs/history/` | |
 
 ## Tests that move
