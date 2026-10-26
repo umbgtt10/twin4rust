@@ -4,7 +4,6 @@
 
 pub mod analysis_report_tests;
 pub mod analyzer_tests;
-pub mod args_tests;
 pub mod behaviourless_impl_detector_tests;
 pub mod definition_analyzer_tests;
 pub mod humble_adapter_detector_tests;

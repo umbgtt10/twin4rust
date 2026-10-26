@@ -6,6 +6,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use clap::Parser;
+use twin4rust::config::Config;
 
 #[derive(Debug, Parser)]
 #[command(name = "cargo-twin4rust")]
@@ -25,6 +26,13 @@ impl Args {
         Self {
             manifest_path,
             packages,
+        }
+    }
+
+    pub fn config(&self) -> Config {
+        Config {
+            manifest_path: self.manifest_path.clone(),
+            packages: self.packages.clone(),
         }
     }
 

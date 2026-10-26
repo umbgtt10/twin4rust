@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+The tool's behaviour and command line are unchanged: its stdout, stderr and
+exit codes are compared byte for byte against 0.5.1. The repository splits
+into a technology-free core and a cli crate (`docs/CORE_CLI_SPLIT.md`), which
+changes how the library is packaged and much of its API.
+
+### Changed (packages)
+- `cargo-twin4rust` is now the command-line crate (`cli/`): the
+  `cargo-twin4rust` binary and a library, `twin4rust_cli`. The analysis library
+  `twin4rust` is published by a new package, `twin4rust-core` (`core/`); a
+  dependent replaces `cargo-twin4rust` with `twin4rust-core`, and paths under
+  `twin4rust::` stay for what remains there. Both crates share the workspace's
+  version.
+- `args::Args` moves to `twin4rust_cli::invocation::args::Args` and gains
+  `config()`, the `Config` the core reads.
+- `runner::Runner::run` takes `&Config` instead of `Args` and returns the exit
+  code -- 1 when a mirror is missing -- instead of ending the process with
+  `exit(1)`; the argv fix-up and the parsing are
+  `twin4rust_cli::invocation::entry_point::EntryPoint`'s.
+
 ### Changed
 - **`AnalysisReport` and `Args` keep their fields private.** In 0.5.1 both
   had `pub` fields. Each carries behaviour of its own --

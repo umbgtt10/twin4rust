@@ -282,7 +282,7 @@ fn resolve_against_this_package_returns_it_with_its_source_root() {
     // Arrange
     let config = Config {
         manifest_path: Some(PathBuf::from("Cargo.toml")),
-        packages: vec![String::from("cargo-twin4rust")],
+        packages: vec![String::from("twin4rust-core")],
     };
     let resolver = ManifestResolver::new(config);
 
@@ -291,7 +291,7 @@ fn resolve_against_this_package_returns_it_with_its_source_root() {
 
     // Assert
     assert_eq!(packages.len(), 1);
-    assert_eq!(packages[0].name, "cargo-twin4rust");
+    assert_eq!(packages[0].name, "twin4rust-core");
     assert!(!packages[0].source_roots.is_empty());
 }
 

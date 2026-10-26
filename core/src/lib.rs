@@ -2,9 +2,10 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
+#![forbid(unsafe_code)]
+
 pub mod analysis_report;
 pub mod analyzer;
-pub mod args;
 pub mod behaviourless_impl_detector;
 pub mod config;
 pub mod definition_analyzer;

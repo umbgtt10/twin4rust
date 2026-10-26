@@ -1,40 +1,36 @@
 [package]
-name = "cargo-twin4rust"
+name = "twin4rust-core"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Cargo subcommand that fails the build when a Rust source file has no mirrored test file beside it"
-readme = "../README.md"
-documentation = "https://docs.rs/cargo-twin4rust"
-keywords = ["cargo", "subcommand", "testing", "coverage", "cli"]
-categories = ["development-tools::cargo-plugins", "development-tools::testing", "command-line-utilities"]
+description = "The analysis behind cargo-twin4rust: which Rust source files have no mirrored test file beside them"
+readme = "README.md"
+documentation = "https://docs.rs/twin4rust-core"
+keywords = ["testing", "coverage", "static-analysis"]
+categories = ["development-tools::testing"]
 
 autotests = false
 
 [lib]
 name = "twin4rust"
 
-[[bin]]
-name = "cargo-twin4rust"
-path = "src/main.rs"
-
 [[test]]
 name = "all_tests"
 path = "tests/all_tests.rs"
 
+[lints]
+workspace = true
+
 [dependencies]
 anyhow = { workspace = true }
 cargo_metadata = { workspace = true }
-clap = { workspace = true }
 quote = { workspace = true }
 syn = { workspace = true }
 walkdir = { workspace = true }
 
 [dev-dependencies]
-clap = { workspace = true }
 serde_json = { workspace = true }
-syn = { workspace = true }
 tempfile = { workspace = true }

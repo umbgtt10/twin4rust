@@ -87,13 +87,9 @@ name = "cargo-twin4rust"
 version = "0.5.1"
 dependencies = [
  "anyhow",
- "cargo_metadata",
  "clap",
- "quote",
- "serde_json",
- "syn 2.0.119",
  "tempfile",
- "walkdir",
+ "twin4rust-core",
 ]
 
 [[package]]
@@ -395,6 +391,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.3",
+]
+
+[[package]]
+name = "twin4rust-core"
+version = "0.5.1"
+dependencies = [
+ "anyhow",
+ "cargo_metadata",
+ "quote",
+ "serde_json",
+ "syn 2.0.119",
+ "tempfile",
+ "walkdir",
 ]
 
 [[package]]

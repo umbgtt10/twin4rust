@@ -2,27 +2,22 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use std::process::exit;
+use std::process::ExitCode;
 
 use anyhow::Result;
 
 use crate::analyzer::Analyzer;
-use crate::args::Args;
 use crate::config::Config;
 use crate::manifest_resolver::ManifestResolver;
 use crate::report_printer::ReportPrinter;
-use std::path::Path;
+
+const GAPS_FOUND: u8 = 1;
 
 pub struct Runner;
 
 impl Runner {
-    pub fn run(args: Args) -> Result<()> {
-        let config = Config {
-            manifest_path: args.manifest_path().map(Path::to_path_buf),
-            packages: args.packages().to_vec(),
-        };
-
-        let resolver = ManifestResolver::new(config);
+    pub fn run(config: &Config) -> Result<ExitCode> {
+        let resolver = ManifestResolver::new(config.clone());
         let packages = resolver.resolve()?;
         let analyzer = Analyzer::new();
         let reports = analyzer.analyze_packages(&packages)?;
@@ -31,9 +26,9 @@ impl Runner {
         printer.print(&reports);
 
         if reports.iter().any(|report| !report.is_empty()) {
-            exit(1);
+            return Ok(ExitCode::from(GAPS_FOUND));
         }
 
-        Ok(())
+        Ok(ExitCode::SUCCESS)
     }
 }

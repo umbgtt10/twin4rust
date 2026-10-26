@@ -3,7 +3,23 @@
 // SPDX-License-Identifier: MIT
 
 use clap::Parser;
-use twin4rust::args::Args;
+use std::path::PathBuf;
+use twin4rust_cli::invocation::args::Args;
+
+#[test]
+fn config_carries_every_package_it_was_given() {
+    // Arrange
+    let args = Args::new(
+        Some(PathBuf::from("my/Cargo.toml")),
+        vec![String::from("pkg_a"), String::from("pkg_b")],
+    );
+
+    // Act
+    let config = args.config();
+
+    // Assert
+    assert_eq!(config.packages, vec!["pkg_a", "pkg_b"]);
+}
 
 #[test]
 fn parse_args_all_options() {
