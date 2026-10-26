@@ -4,8 +4,8 @@
 
 use cargo_metadata::Target;
 use serde_json::from_value;
-use std::path::PathBuf;
 use twin4rust::target_root_collector::TargetRootCollector;
+use twin4rust::workspace::source_path::SourcePath;
 
 fn bench_target(src_path: &str) -> Target {
     from_value(serde_json::json!({
@@ -77,6 +77,10 @@ fn lib_target(src_path: &str) -> Target {
     .expect("valid Target")
 }
 
+fn path(text: &str) -> SourcePath {
+    SourcePath::new(String::from(text))
+}
+
 fn test_target(src_path: &str) -> Target {
     from_value(serde_json::json!({
         "name": "test_integration",
@@ -116,7 +120,7 @@ fn collect_from_targets_bin_adds_parent() {
 
     // Assert
     let roots = collector.into_roots();
-    assert_eq!(roots, vec![PathBuf::from("/project/src")]);
+    assert_eq!(roots, vec![path("/project/src")]);
 }
 
 #[test]
@@ -146,13 +150,7 @@ fn collect_from_targets_distinct_roots() {
     // Assert
     let mut roots = collector.into_roots();
     roots.sort();
-    assert_eq!(
-        roots,
-        vec![
-            PathBuf::from("/project/other"),
-            PathBuf::from("/project/src"),
-        ]
-    );
+    assert_eq!(roots, vec![path("/project/other"), path("/project/src"),]);
 }
 
 #[test]
@@ -180,7 +178,7 @@ fn collect_from_targets_lib_adds_parent() {
 
     // Assert
     let roots = collector.into_roots();
-    assert_eq!(roots, vec![PathBuf::from("/project/src")]);
+    assert_eq!(roots, vec![path("/project/src")]);
 }
 
 #[test]
@@ -196,7 +194,7 @@ fn collect_from_targets_multiple_deduplicates() {
 
     // Assert
     let roots = collector.into_roots();
-    assert_eq!(roots, vec![PathBuf::from("/project/src")]);
+    assert_eq!(roots, vec![path("/project/src")]);
 }
 
 #[test]
@@ -216,7 +214,7 @@ fn collect_from_targets_test_is_skipped() {
 #[test]
 fn ensure_fallback_empty_adds_src() {
     // Arrange
-    let manifest_dir = PathBuf::from("/project");
+    let manifest_dir = path("/project");
 
     // Act
     let mut collector = TargetRootCollector::new();
@@ -224,14 +222,14 @@ fn ensure_fallback_empty_adds_src() {
 
     // Assert
     let roots = collector.into_roots();
-    assert_eq!(roots, vec![PathBuf::from("/project/src")]);
+    assert_eq!(roots, vec![path("/project/src")]);
 }
 
 #[test]
 fn ensure_fallback_non_empty_does_not_add() {
     // Arrange
     let target = lib_target("/project/src/lib.rs");
-    let manifest_dir = PathBuf::from("/project");
+    let manifest_dir = path("/project");
     let mut collector = TargetRootCollector::new();
     collector.collect_from_targets(&[target]);
 
@@ -240,7 +238,7 @@ fn ensure_fallback_non_empty_does_not_add() {
 
     // Assert
     let roots = collector.into_roots();
-    assert_eq!(roots, vec![PathBuf::from("/project/src")]);
+    assert_eq!(roots, vec![path("/project/src")]);
 }
 
 // A root nested inside another is redundant: SourceWalker recurses, so every
@@ -257,7 +255,7 @@ fn into_roots_drops_a_root_nested_inside_another() {
     collector.collect_from_targets(&[library, nested_binary]);
 
     // Assert
-    assert_eq!(collector.into_roots(), vec![PathBuf::from("/p/src")]);
+    assert_eq!(collector.into_roots(), vec![path("/p/src")]);
 }
 
 #[test]
@@ -271,7 +269,7 @@ fn into_roots_drops_a_root_nested_several_levels_deep() {
     collector.collect_from_targets(&[library, deep_binary]);
 
     // Assert
-    assert_eq!(collector.into_roots(), vec![PathBuf::from("/p/src")]);
+    assert_eq!(collector.into_roots(), vec![path("/p/src")]);
 }
 
 #[test]
@@ -287,7 +285,7 @@ fn into_roots_keeps_a_root_that_only_shares_a_name_prefix() {
     // Assert
     assert_eq!(
         collector.into_roots(),
-        vec![PathBuf::from("/p/src"), PathBuf::from("/p/src_generated")]
+        vec![path("/p/src"), path("/p/src_generated")]
     );
 }
 
@@ -304,7 +302,7 @@ fn into_roots_keeps_sibling_roots_that_do_not_nest() {
     // Assert
     assert_eq!(
         collector.into_roots(),
-        vec![PathBuf::from("/p/src"), PathBuf::from("/p/tools")]
+        vec![path("/p/src"), path("/p/tools")]
     );
 }
 

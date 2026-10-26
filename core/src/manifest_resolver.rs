@@ -2,7 +2,7 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use std::path::{Path, PathBuf};
+use std::path::MAIN_SEPARATOR;
 
 use anyhow::{Context, Result, bail};
 use cargo_metadata::{Metadata, MetadataCommand, Package};
@@ -10,6 +10,7 @@ use cargo_metadata::{Metadata, MetadataCommand, Package};
 use crate::config::Config;
 use crate::package_context::PackageContext;
 use crate::target_root_collector::TargetRootCollector;
+use crate::workspace::source_path::SourcePath;
 
 pub struct ManifestResolver {
     config: Config,
@@ -20,11 +21,10 @@ impl ManifestResolver {
         Self { config }
     }
 
-    pub fn relative_file(base_dir: &Path, file_path: &Path) -> String {
+    pub fn relative_file(base_dir: &SourcePath, file_path: &SourcePath) -> String {
         file_path
             .strip_prefix(base_dir)
-            .unwrap_or(file_path)
-            .to_string_lossy()
+            .unwrap_or(file_path.as_str())
             .replace('\\', "/")
     }
 
@@ -72,12 +72,8 @@ impl ManifestResolver {
     }
 
     fn build_package_context(package: &Package) -> Result<PackageContext> {
-        let manifest_dir = package
-            .manifest_path
-            .clone()
-            .into_std_path_buf()
+        let manifest_dir = Self::source_path(package.manifest_path.as_str())
             .parent()
-            .map(PathBuf::from)
             .context("package manifest has no parent directory")?;
 
         let mut root_collector = TargetRootCollector::new();
@@ -99,9 +95,15 @@ impl ManifestResolver {
 
     fn should_ignore_source_root(
         package_name: &str,
-        manifest_dir: &Path,
-        source_root: &Path,
+        manifest_dir: &SourcePath,
+        source_root: &SourcePath,
     ) -> bool {
-        package_name.ends_with("-validation") && source_root == manifest_dir.join("src")
+        package_name.ends_with("-validation") && *source_root == manifest_dir.join("src")
+    }
+
+    // cargo's paths are UTF-8, so nothing is lost; the platform's separator
+    // becomes the core's `/`.
+    fn source_path(text: &str) -> SourcePath {
+        SourcePath::new(text.replace(MAIN_SEPARATOR, "/"))
     }
 }

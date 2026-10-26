@@ -5,11 +5,11 @@
 use cargo_metadata::Metadata;
 use cargo_metadata::Target;
 use serde_json::from_value;
-use std::path::Path;
 use std::path::PathBuf;
 use twin4rust::config::Config;
 use twin4rust::manifest_resolver::ManifestResolver;
 use twin4rust::target_root_collector::TargetRootCollector;
+use twin4rust::workspace::source_path::SourcePath;
 
 fn bench_target(src_path: &str) -> Target {
     from_value(serde_json::json!({
@@ -133,6 +133,10 @@ fn metadata_with_package(name: &str, root_id: Option<&str>) -> Metadata {
     .expect("valid Metadata")
 }
 
+fn path(text: &str) -> SourcePath {
+    SourcePath::new(String::from(text))
+}
+
 fn test_target(src_path: &str) -> Target {
     from_value(serde_json::json!({
         "name": "test_integration",
@@ -222,11 +226,11 @@ fn is_production_target_test_returns_false() {
 #[test]
 fn relative_file_inside_base_dir_strips_prefix() {
     // Arrange
-    let base_dir = Path::new("/home/user/project");
-    let file_path = Path::new("/home/user/project/src/lib.rs");
+    let base_dir = path("/home/user/project");
+    let file_path = path("/home/user/project/src/lib.rs");
 
     // Act
-    let relative = ManifestResolver::relative_file(base_dir, file_path);
+    let relative = ManifestResolver::relative_file(&base_dir, &file_path);
 
     // Assert
     assert_eq!(relative, "src/lib.rs");
@@ -240,11 +244,11 @@ fn relative_file_inside_base_dir_strips_prefix() {
 #[test]
 fn relative_file_normalizes_backslashes_to_forward_slashes() {
     // Arrange
-    let base_dir = Path::new("project");
+    let base_dir = path("project");
     let file_path = base_dir.join("src\\lib.rs");
 
     // Act
-    let relative = ManifestResolver::relative_file(base_dir, &file_path);
+    let relative = ManifestResolver::relative_file(&base_dir, &file_path);
 
     // Assert
     assert_eq!(relative, "src/lib.rs");
@@ -254,11 +258,11 @@ fn relative_file_normalizes_backslashes_to_forward_slashes() {
 #[test]
 fn relative_file_outside_base_dir_returns_full_path() {
     // Arrange
-    let base_dir = Path::new("/home/user/project");
-    let file_path = Path::new("/tmp/other.rs");
+    let base_dir = path("/home/user/project");
+    let file_path = path("/tmp/other.rs");
 
     // Act
-    let relative = ManifestResolver::relative_file(base_dir, file_path);
+    let relative = ManifestResolver::relative_file(&base_dir, &file_path);
 
     // Assert
     assert_eq!(relative, "/tmp/other.rs");
@@ -267,11 +271,11 @@ fn relative_file_outside_base_dir_returns_full_path() {
 #[test]
 fn relative_file_same_path_returns_empty_string() {
     // Arrange
-    let base_dir = Path::new("/home/user/project");
-    let file_path = Path::new("/home/user/project");
+    let base_dir = path("/home/user/project");
+    let file_path = path("/home/user/project");
 
     // Act
-    let relative = ManifestResolver::relative_file(base_dir, file_path);
+    let relative = ManifestResolver::relative_file(&base_dir, &file_path);
 
     // Assert
     assert_eq!(relative, "");

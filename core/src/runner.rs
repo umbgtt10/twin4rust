@@ -10,17 +10,25 @@ use crate::analyzer::Analyzer;
 use crate::config::Config;
 use crate::manifest_resolver::ManifestResolver;
 use crate::report_printer::ReportPrinter;
+use crate::traits::source_tree::SourceTree;
 
 const GAPS_FOUND: u8 = 1;
 
-pub struct Runner;
+pub struct Runner<'a> {
+    analyzer: Analyzer<'a>,
+}
 
-impl Runner {
-    pub fn run(config: &Config) -> Result<ExitCode> {
+impl<'a> Runner<'a> {
+    pub fn new(source_tree: &'a dyn SourceTree) -> Self {
+        Self {
+            analyzer: Analyzer::new(source_tree),
+        }
+    }
+
+    pub fn run(&self, config: &Config) -> Result<ExitCode> {
         let resolver = ManifestResolver::new(config.clone());
         let packages = resolver.resolve()?;
-        let analyzer = Analyzer::new();
-        let reports = analyzer.analyze_packages(&packages)?;
+        let reports = self.analyzer.analyze_packages(&packages)?;
 
         let printer = ReportPrinter::new();
         printer.print(&reports);

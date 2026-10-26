@@ -2,28 +2,27 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use std::fs;
-use std::path::Path;
-
-use anyhow::{Context, Result};
+use anyhow::Result;
 
 use crate::analysis_report::AnalysisReport;
 use crate::definition_analyzer::DefinitionAnalyzer;
 use crate::manifest_resolver::ManifestResolver;
 use crate::missing_test_gap::MissingTestGap;
 use crate::package_context::PackageContext;
-use crate::source_walker::SourceWalker;
 use crate::test_file_resolver::TestFileResolver;
+use crate::traits::source_tree::SourceTree;
+use crate::workspace::source_path::SourcePath;
 
-#[derive(Default)]
-pub struct Analyzer {
+pub struct Analyzer<'a> {
+    source_tree: &'a dyn SourceTree,
     definition_analyzer: DefinitionAnalyzer,
     test_file_resolver: TestFileResolver,
 }
 
-impl Analyzer {
-    pub fn new() -> Self {
+impl<'a> Analyzer<'a> {
+    pub fn new(source_tree: &'a dyn SourceTree) -> Self {
         Self {
+            source_tree,
             definition_analyzer: DefinitionAnalyzer::new(),
             test_file_resolver: TestFileResolver::new(),
         }
@@ -51,7 +50,7 @@ impl Analyzer {
 
     fn check_source_file(
         &self,
-        source_path: &Path,
+        source_path: &SourcePath,
         package: &PackageContext,
     ) -> Result<Option<MissingTestGap>> {
         let relative_source = ManifestResolver::relative_file(&package.manifest_dir, source_path);
@@ -60,8 +59,7 @@ impl Analyzer {
             return Ok(None);
         }
 
-        let source = fs::read_to_string(source_path)
-            .with_context(|| format!("failed to read source file {}", source_path.display()))?;
+        let source = self.source_tree.read_source(source_path)?;
 
         if self.should_ignore_source_file(&relative_source, &source)? {
             return Ok(None);
@@ -81,7 +79,7 @@ impl Analyzer {
             return Ok(None);
         };
 
-        if expected_test.exists() {
+        if self.source_tree.contains(&expected_test) {
             return Ok(None);
         }
 
@@ -108,14 +106,11 @@ impl Analyzer {
 
     fn process_source_root(
         &self,
-        source_root: &Path,
+        source_root: &SourcePath,
         package: &PackageContext,
     ) -> Result<Vec<MissingTestGap>> {
-        if !source_root.exists() {
-            return Ok(Vec::new());
-        }
         let mut missing = Vec::new();
-        for source_path in SourceWalker::walk(source_root) {
+        for source_path in self.source_tree.rust_files(source_root)? {
             if let Some(gap) = self.check_source_file(&source_path, package)? {
                 missing.push(gap);
             }

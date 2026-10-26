@@ -2,11 +2,11 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use std::path::PathBuf;
+use crate::workspace::source_path::SourcePath;
 
 #[derive(Debug, Clone)]
 pub struct PackageContext {
     pub name: String,
-    pub manifest_dir: PathBuf,
-    pub source_roots: Vec<PathBuf>,
+    pub manifest_dir: SourcePath,
+    pub source_roots: Vec<SourcePath>,
 }

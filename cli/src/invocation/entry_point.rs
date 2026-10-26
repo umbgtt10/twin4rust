@@ -9,9 +9,11 @@ use clap::Parser;
 use twin4rust::runner::Runner;
 
 use crate::invocation::args::Args;
+use crate::system::walkdir_source_tree::WalkdirSourceTree;
 
 // The composition root: the command line in, the report out on stdout, an exit
-// code back. Everything it hands the arguments to is the core's.
+// code back. The one place the real file system is chosen; everything it
+// composes is the core's.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct EntryPoint;
 
@@ -25,6 +27,7 @@ impl EntryPoint {
         I: IntoIterator<Item = String>,
     {
         let args = Args::parse_from(Args::without_cargo_subcommand(argv));
-        Runner::run(&args.config())
+        let source_tree = WalkdirSourceTree::new();
+        Runner::new(&source_tree).run(&args.config())
     }
 }

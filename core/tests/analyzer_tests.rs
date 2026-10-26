@@ -2,30 +2,18 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use std::fs;
-use std::path::Path;
-use tempfile::TempDir;
+use crate::support::in_memory_source_tree::InMemorySourceTree;
 use twin4rust::analyzer::Analyzer;
 use twin4rust::package_context::PackageContext;
+use twin4rust::workspace::source_path::SourcePath;
 
-fn analyzer() -> Analyzer {
-    Analyzer::new()
-}
-
-fn package_context(root: &Path, name: &str) -> PackageContext {
+fn package_context(root: &str, name: &str) -> PackageContext {
+    let manifest_dir = SourcePath::new(String::from(root));
     PackageContext {
         name: name.to_string(),
-        manifest_dir: root.to_path_buf(),
-        source_roots: vec![root.join("src")],
+        source_roots: vec![manifest_dir.join("src")],
+        manifest_dir,
     }
-}
-
-fn write_file(root: &Path, relative_path: &str, contents: &str) {
-    let full_path = root.join(relative_path);
-    if let Some(parent) = full_path.parent() {
-        fs::create_dir_all(parent).expect("failed to create parent dirs");
-    }
-    fs::write(full_path, contents).expect("failed to write file");
 }
 
 // `src/bin/*.rs` is Cargo's location for extra binaries, so each file directly
@@ -35,11 +23,8 @@ fn write_file(root: &Path, relative_path: &str, contents: &str) {
 #[test]
 fn a_binary_entry_point_under_src_bin_is_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/bin/board_ctl.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/bin/board_ctl.rs",
         r#"
 fn main() {
     if std::env::args().count() > 1 {
@@ -50,8 +35,8 @@ fn main() {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -65,11 +50,8 @@ fn main() {
 #[test]
 fn a_humble_adapter_forwarding_to_an_untestable_boundary_is_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/board_halter.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/board_halter.rs",
         r#"
 use crate::board_eraser::BoardEraser;
 use crate::board_id::BoardId;
@@ -92,8 +74,8 @@ impl BoardHalter {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -110,20 +92,16 @@ impl BoardHalter {
 #[test]
 fn a_module_belonging_to_a_src_bin_binary_is_still_reported() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/bin/tool/main.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/bin/tool/main.rs",
         r#"
 fn main() {
     println!("tool");
 }
 "#,
     );
-    write_file(
-        root,
-        "src/bin/tool/parser.rs",
+    let tree = tree.with_file(
+        "/p/src/bin/tool/parser.rs",
         r#"
 pub fn parse(input: &str) -> usize {
     if input.is_empty() { 0 } else { input.len() }
@@ -132,8 +110,8 @@ pub fn parse(input: &str) -> usize {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -156,11 +134,8 @@ pub fn parse(input: &str) -> usize {
 #[test]
 fn a_single_type_file_whose_method_returns_a_value_is_still_reported() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/rtt_channel_config.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/rtt_channel_config.rs",
         r#"
 pub struct RttChannelConfig {
     buffer_size: RttBufferSize,
@@ -176,8 +151,8 @@ impl RttChannelConfig {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -192,11 +167,8 @@ impl RttChannelConfig {
 #[test]
 fn an_adapter_that_grows_a_branch_is_reported_again() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/board_halter.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/board_halter.rs",
         r#"
 pub struct BoardHalter {
     board_id: BoardId,
@@ -215,8 +187,8 @@ impl BoardHalter {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -229,9 +201,78 @@ impl BoardHalter {
 }
 
 #[test]
+fn analyze_package_over_a_source_root_that_does_not_exist_returns_an_empty_report() {
+    // Arrange
+    let tree = InMemorySourceTree::new().with_file("/elsewhere/src/lib.rs", "pub fn f() {}\n");
+
+    // Act
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert_eq!(report.package_name(), "demo-node");
+    assert!(report.is_empty());
+}
+
+#[test]
+fn analyze_package_with_a_file_that_does_not_parse_returns_an_error() {
+    // Arrange
+    let tree = InMemorySourceTree::new().with_file("/p/src/broken.rs", "pub fn {");
+
+    // Act
+    let result = Analyzer::new(&tree).analyze_package(&package_context("/p", "demo-node"));
+
+    // Assert
+    assert_eq!(
+        result.err().map(|failure| failure.to_string()),
+        Some(String::from("failed to parse Rust source"))
+    );
+}
+
+#[test]
+fn analyze_package_with_a_mirrored_test_file_reports_no_gap() {
+    // Arrange
+    let tree = InMemorySourceTree::new()
+        .with_file(
+            "/p/src/implementations/raft/client.rs",
+            "pub fn start_client() {}\n",
+        )
+        .with_file("/p/tests/implementations/raft/client_tests.rs", "");
+
+    // Act
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "raft-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert!(
+        report.is_empty(),
+        "a source file whose mirror exists has no gap, got: {:?}",
+        report.missing()
+    );
+}
+
+#[test]
+fn analyze_package_with_an_unreadable_file_names_it_in_the_error() {
+    // Arrange
+    let tree = InMemorySourceTree::new().with_unreadable_file("/p/src/locked.rs");
+
+    // Act
+    let result = Analyzer::new(&tree).analyze_package(&package_context("/p", "demo-node"));
+
+    // Assert
+    assert_eq!(
+        result.err().map(|failure| failure.to_string()),
+        Some(String::from("failed to read source file /p/src/locked.rs"))
+    );
+}
+
+#[test]
 fn analyze_packages_over_no_packages_returns_no_reports() {
     // Arrange
-    let analyzer = Analyzer::new();
+    let tree = InMemorySourceTree::new();
+    let analyzer = Analyzer::new(&tree);
 
     // Act
     let reports = analyzer.analyze_packages(&[]).expect("analyze");
@@ -243,19 +284,14 @@ fn analyze_packages_over_no_packages_returns_no_reports() {
 #[test]
 fn analyze_packages_over_two_packages_returns_a_report_for_each() {
     // Arrange
-    let first_dir = TempDir::new().expect("temp dir");
-    let first_root = first_dir.path();
-    let second_dir = TempDir::new().expect("temp dir");
-    let second_root = second_dir.path();
-    for root in [first_root, second_root] {
-        fs::create_dir_all(root.join("src")).expect("create src");
-        fs::write(root.join("src").join("lib.rs"), "pub fn f() {}\n").expect("write lib");
-    }
+    let tree = InMemorySourceTree::new()
+        .with_file("/first/src/lib.rs", "pub fn f() {}\n")
+        .with_file("/second/src/lib.rs", "pub fn f() {}\n");
     let packages = vec![
-        package_context(first_root, "first"),
-        package_context(second_root, "second"),
+        package_context("/first", "first"),
+        package_context("/second", "second"),
     ];
-    let analyzer = Analyzer::new();
+    let analyzer = Analyzer::new(&tree);
 
     // Act
     let reports = analyzer.analyze_packages(&packages).expect("analyze");
@@ -269,11 +305,8 @@ fn analyze_packages_over_two_packages_returns_a_report_for_each() {
 #[test]
 fn behavioral_validation_crate_source_is_still_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/in_memory_transport.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/in_memory_transport.rs",
         r#"
 pub struct InMemoryTransport;
 
@@ -286,8 +319,8 @@ impl InMemoryTransport {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "raft-validation"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "raft-validation"))
         .expect("analysis should succeed");
 
     // Assert
@@ -301,11 +334,8 @@ impl InMemoryTransport {
 #[test]
 fn enum_with_non_struct_new_body_is_not_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/status.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/status.rs",
         r#"
 pub enum Status {
     Active,
@@ -321,8 +351,8 @@ impl Status {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -339,11 +369,8 @@ impl Status {
 #[test]
 fn generic_struct_with_new_is_ignored_as_trivial_constructor() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/wrapper.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/wrapper.rs",
         r#"
 pub struct Wrapper<T> {
     pub inner: T,
@@ -358,8 +385,8 @@ impl<T> Wrapper<T> {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -373,28 +400,24 @@ impl<T> Wrapper<T> {
 #[test]
 fn import_only_mod_file_is_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/something/mod.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/something/mod.rs",
         r#"
 pub mod child;
 use crate::foo::Bar;
 pub use crate::baz::Qux;
 "#,
     );
-    write_file(
-        root,
-        "src/something/child.rs",
+    let tree = tree.with_file(
+        "/p/src/something/child.rs",
         r#"
 pub fn do_work() {}
 "#,
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -419,33 +442,28 @@ pub fn do_work() {}
 #[test]
 fn lib_main_and_build_files_are_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/lib.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/lib.rs",
         r#"
 pub fn lib_entry() {}
 "#,
     );
-    write_file(
-        root,
-        "src/main.rs",
+    let tree = tree.with_file(
+        "/p/src/main.rs",
         r#"
 pub fn main_entry() {}
 "#,
     );
-    write_file(
-        root,
-        "build.rs",
+    let tree = tree.with_file(
+        "/p/build.rs",
         r#"
 fn main() {}
 "#,
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -459,19 +477,16 @@ fn main() {}
 #[test]
 fn mirrored_test_path_is_detected_for_nested_non_ignored_source_file() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/implementations/raft/client.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/implementations/raft/client.rs",
         r#"
 pub fn start_client() {}
 "#,
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "raft-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "raft-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -488,11 +503,8 @@ pub fn start_client() {}
 #[test]
 fn mod_file_is_ignored_under_current_gate_policy() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/feature/mod.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/feature/mod.rs",
         r#"
 pub mod child;
 
@@ -501,8 +513,8 @@ pub fn configure() {}
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -519,11 +531,8 @@ pub fn configure() {}
 #[test]
 fn multiple_definition_only_items_are_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/types.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/types.rs",
         r#"
 pub trait QueryAdapter {
     type Output;
@@ -540,8 +549,8 @@ pub enum QueryKind {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -555,11 +564,8 @@ pub enum QueryKind {
 #[test]
 fn nontrivial_new_constructor_is_not_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/response.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/response.rs",
         r#"
 pub struct Response {
     pub value: u64,
@@ -578,8 +584,8 @@ impl Response {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -596,11 +602,8 @@ impl Response {
 #[test]
 fn pure_single_enum_definition_is_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/state/storage/storage_query_result.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/state/storage/storage_query_result.rs",
         r#"
 use std::collections::BTreeMap;
 
@@ -613,8 +616,8 @@ pub enum StorageQueryResult {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -628,11 +631,8 @@ pub enum StorageQueryResult {
 #[test]
 fn pure_single_struct_definition_is_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/node_role.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/node_role.rs",
         r#"
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NodeRole {
@@ -642,8 +642,8 @@ pub struct NodeRole {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "raft-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "raft-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -657,11 +657,8 @@ pub struct NodeRole {
 #[test]
 fn several_binary_entry_points_under_src_bin_are_all_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/bin/first.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/bin/first.rs",
         r#"
 fn main() {
     for argument in std::env::args() {
@@ -670,9 +667,8 @@ fn main() {
 }
 "#,
     );
-    write_file(
-        root,
-        "src/bin/second.rs",
+    let tree = tree.with_file(
+        "/p/src/bin/second.rs",
         r#"
 fn main() {
     if cfg!(debug_assertions) {
@@ -683,8 +679,8 @@ fn main() {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -698,11 +694,8 @@ fn main() {
 #[test]
 fn single_enum_with_nontrivial_impl_is_not_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/message_source.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/message_source.rs",
         r#"
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MessageSource {
@@ -722,8 +715,8 @@ impl MessageSource {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -740,11 +733,8 @@ impl MessageSource {
 #[test]
 fn single_struct_with_constructor_not_named_new_is_not_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/builder.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/builder.rs",
         r#"
 pub struct Builder {
     pub value: u64,
@@ -759,8 +749,8 @@ impl Builder {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -777,11 +767,8 @@ impl Builder {
 #[test]
 fn single_struct_with_empty_impl_is_not_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/marker.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/marker.rs",
         r#"
 pub struct Marker;
 
@@ -791,8 +778,8 @@ impl Marker {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -806,11 +793,8 @@ impl Marker {
 #[test]
 fn single_struct_with_multiple_impl_methods_is_not_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/snapshot.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/snapshot.rs",
         r#"
 #[derive(Debug, Clone)]
 pub struct Snapshot {
@@ -830,8 +814,8 @@ impl Snapshot {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "raft-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "raft-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -848,11 +832,8 @@ impl Snapshot {
 #[test]
 fn single_struct_with_trait_impl_is_not_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/convertible.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/convertible.rs",
         r#"
 pub struct Convertible;
 
@@ -865,8 +846,8 @@ impl From<u64> for Convertible {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -883,11 +864,8 @@ impl From<u64> for Convertible {
 #[test]
 fn single_struct_with_trivial_new_constructor_is_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/implementations/recovery/peer_recovery_status.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/implementations/recovery/peer_recovery_status.rs",
         r#"
 use crate::common_types::types::{Hash, Height};
 
@@ -906,8 +884,8 @@ impl PeerRecoveryStatus {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -921,11 +899,8 @@ impl PeerRecoveryStatus {
 #[test]
 fn source_file_with_no_impl_block_is_definition_only() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/point.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/point.rs",
         r#"
 pub struct Point {
     pub x: f64,
@@ -935,8 +910,8 @@ pub struct Point {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -950,11 +925,8 @@ pub struct Point {
 #[test]
 fn trait_and_type_definition_only_file_is_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/storage_adapter.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/storage_adapter.rs",
         r#"
 pub trait StorageAdapter {
     type Query;
@@ -965,8 +937,8 @@ pub type StorageKey = u64;
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -980,11 +952,8 @@ pub type StorageKey = u64;
 #[test]
 fn trait_impl_for_single_type_is_not_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/common_types/displayable.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/common_types/displayable.rs",
         r#"
 pub trait Printable {
     fn render(&self) -> &'static str;
@@ -1001,8 +970,8 @@ impl Printable for Displayable {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-node"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
         .expect("analysis should succeed");
 
     // Assert
@@ -1019,11 +988,8 @@ impl Printable for Displayable {
 #[test]
 fn validation_crate_src_files_are_ignored() {
     // Arrange
-    let dir = TempDir::new().expect("temp dir");
-    let root = dir.path();
-    write_file(
-        root,
-        "src/protocol_cluster.rs",
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/protocol_cluster.rs",
         r#"
 use std::collections::BTreeMap;
 
@@ -1034,8 +1000,8 @@ pub fn helper() -> usize {
     );
 
     // Act
-    let report = analyzer()
-        .analyze_package(&package_context(root, "demo-validation"))
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-validation"))
         .expect("analysis should succeed");
 
     // Assert

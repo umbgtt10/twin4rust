@@ -90,6 +90,7 @@ dependencies = [
  "clap",
  "tempfile",
  "twin4rust-core",
+ "walkdir",
 ]
 
 [[package]]
@@ -402,8 +403,6 @@ dependencies = [
  "quote",
  "serde_json",
  "syn 2.0.119",
- "tempfile",
- "walkdir",
 ]
 
 [[package]]

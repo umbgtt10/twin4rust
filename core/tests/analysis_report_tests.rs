@@ -7,6 +7,7 @@ use twin4rust::analysis_report::AnalysisReport;
 use twin4rust::config::Config;
 use twin4rust::missing_test_gap::MissingTestGap;
 use twin4rust::package_context::PackageContext;
+use twin4rust::workspace::source_path::SourcePath;
 
 #[test]
 fn analysis_report_clone_produces_independent_copy() {
@@ -174,8 +175,8 @@ fn package_context_clone_produces_independent_copy() {
     // Arrange
     let ctx = PackageContext {
         name: "pkg".to_string(),
-        manifest_dir: PathBuf::from("/a"),
-        source_roots: vec![PathBuf::from("/a/src")],
+        manifest_dir: SourcePath::new(String::from("/a")),
+        source_roots: vec![SourcePath::new(String::from("/a/src"))],
     };
 
     // Act

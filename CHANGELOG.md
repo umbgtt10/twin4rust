@@ -6,8 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-The tool's behaviour and command line are unchanged: its stdout, stderr and
-exit codes are compared byte for byte against 0.5.1. The repository splits
+The tool's behaviour and command line are unchanged -- its stdout, stderr and
+exit codes are compared byte for byte against 0.5.1 -- with one exception: a
+`.rs` file whose path is not UTF-8 now fails the run, naming the file, where
+0.5.1 reported it under a lossy name. Such a file cannot be a `mod`
+(identifiers are UTF-8), only a `#[path]` target. The repository splits
 into a technology-free core and a cli crate (`docs/CORE_CLI_SPLIT.md`), which
 changes how the library is packaged and much of its API.
 
@@ -20,10 +23,24 @@ changes how the library is packaged and much of its API.
   version.
 - `args::Args` moves to `twin4rust_cli::invocation::args::Args` and gains
   `config()`, the `Config` the core reads.
-- `runner::Runner::run` takes `&Config` instead of `Args` and returns the exit
-  code -- 1 when a mirror is missing -- instead of ending the process with
-  `exit(1)`; the argv fix-up and the parsing are
+- `runner::Runner::run(Args)` is `Runner::new(&dyn SourceTree)` then
+  `run(&self, &Config)`, which returns the exit code -- 1 when a mirror is
+  missing -- instead of ending the process with `exit(1)`; the argv fix-up, the
+  parsing and the choice of the real file system are
   `twin4rust_cli::invocation::entry_point::EntryPoint`'s.
+- `source_walker::SourceWalker` is gone: the new port
+  `traits::source_tree::SourceTree` (`rust_files`, `read_source`, `contains`)
+  is implemented on disk by `twin4rust_cli::system::walkdir_source_tree::WalkdirSourceTree`.
+- `analyzer::Analyzer::new()` is `Analyzer::new(&dyn SourceTree)`: it lists,
+  reads and looks for the mirrored test file through the tree it was given, and
+  no longer implements `Default`.
+- Paths in the library are `workspace::source_path::SourcePath`, text with `/`
+  as its only separator: `PackageContext`'s `manifest_dir` and `source_roots`,
+  `ManifestResolver::relative_file(&SourcePath, &SourcePath)`,
+  `TestFileResolver::expected_test_file(&SourcePath, &SourcePath) ->
+  Option<SourcePath>`, `TargetRootCollector::ensure_fallback(&SourcePath)` and
+  `into_roots() -> Vec<SourcePath>`. A file the tree cannot list or read fails
+  with `workspace::source_read_failure::SourceReadFailure`.
 
 ### Changed
 - **`AnalysisReport` and `Args` keep their fields private.** In 0.5.1 both

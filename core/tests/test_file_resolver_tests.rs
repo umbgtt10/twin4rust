@@ -2,11 +2,11 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use std::path::PathBuf;
 use twin4rust::test_file_resolver::TestFileResolver;
+use twin4rust::workspace::source_path::SourcePath;
 
-fn manifest_dir() -> PathBuf {
-    PathBuf::from("/home/user/project")
+fn manifest_dir() -> SourcePath {
+    SourcePath::new(String::from("/home/user/project"))
 }
 
 fn resolver() -> TestFileResolver {
@@ -111,7 +111,7 @@ fn source_file_with_double_extension_maps_to_tests() {
 fn source_in_other_directory_returns_none() {
     // Arrange
     let manifest = manifest_dir();
-    let source = PathBuf::from("/tmp/other.rs");
+    let source = SourcePath::new(String::from("/tmp/other.rs"));
 
     // Act
     let result = resolver().expected_test_file(&manifest, &source);

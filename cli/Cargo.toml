@@ -32,6 +32,7 @@ workspace = true
 anyhow = { workspace = true }
 clap = { workspace = true }
 twin4rust-core = { workspace = true }
+walkdir = { workspace = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
