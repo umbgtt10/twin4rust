@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-27
+
 The tool's behaviour and command line are unchanged -- its stdout, stderr and
 exit codes are compared byte for byte against 0.5.1 -- with one exception: a
 `.rs` file whose path is not UTF-8 now fails the run, naming the file, where
