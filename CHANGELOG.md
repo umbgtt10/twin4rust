@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-02
+
 ### Added
 - A mirrored test file for a source that earns none -- a file of definitions, or
   a data holder -- is reported, in a section of its own headed "Mirrored test
