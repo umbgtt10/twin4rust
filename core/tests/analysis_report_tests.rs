@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT
 
 use twin4rust::analysis_report::AnalysisReport;
-use twin4rust::config::Config;
 use twin4rust::missing_test_gap::MissingTestGap;
 use twin4rust::package_context::PackageContext;
 use twin4rust::unearned_mirror::UnearnedMirror;
@@ -163,59 +162,6 @@ fn analysis_report_unearned_returns_the_unearned_mirrors() {
 
     // Assert
     assert_eq!(unearned, &[mirror]);
-}
-
-#[test]
-fn config_clone_produces_independent_copy() {
-    // Arrange
-    let config = Config {
-        packages: vec!["pkg".to_string()],
-    };
-
-    // Act
-    let cloned = config.clone();
-
-    // Assert
-    assert_eq!(cloned.packages, config.packages);
-}
-
-#[test]
-fn missing_test_gap_clone_produces_independent_copy() {
-    // Arrange
-    let gap = MissingTestGap {
-        package_name: "pkg".to_string(),
-        relative_source_file: "src/main.rs".to_string(),
-        expected_test_file: "tests/main_tests.rs".to_string(),
-    };
-
-    // Act
-    let cloned = gap.clone();
-
-    // Assert
-    assert_eq!(cloned, gap);
-}
-
-#[test]
-fn missing_test_gap_partial_eq_compares_all_fields() {
-    // Arrange
-    let a = MissingTestGap {
-        package_name: "pkg".to_string(),
-        relative_source_file: "src/a.rs".to_string(),
-        expected_test_file: "tests/a_tests.rs".to_string(),
-    };
-    let b = MissingTestGap {
-        package_name: "pkg".to_string(),
-        relative_source_file: "src/a.rs".to_string(),
-        expected_test_file: "tests/a_tests.rs".to_string(),
-    };
-    let c = MissingTestGap {
-        package_name: "other".to_string(),
-        ..a.clone()
-    };
-
-    // Act & Assert
-    assert_eq!(a, b);
-    assert_ne!(a, c);
 }
 
 #[test]

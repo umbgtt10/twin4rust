@@ -102,16 +102,17 @@ in fact deliberate.
 ## `analysis_report_tests.rs` is narrower than its contents
 
 The file mirrors `src/analysis_report.rs`, which is what the gate requires, but
-it also exercises `Config`, `MissingTestGap` and `PackageContext`. Those three
-are definition-only types, so the gate demands no mirror for them and their
-coverage has nowhere else it is obliged to live.
+it also exercises `PackageContext`. That is a definition-only type, so the gate
+demands no mirror for it and its coverage has nowhere else it is obliged to
+live. `Config` and `MissingTestGap` are records: their checks live in the tests
+of the behaviour that uses them, not in tests of their own.
 
 The name is therefore accurate about its obligation and misleading about its
-contents. Splitting it three ways would produce files whose subjects the gate
-explicitly does not require, which is its own kind of noise.
+contents. A `package_context_tests.rs` would be a mirror its source does not
+earn, which the gate reports.
 
-Not started; flagged so the next person to add a test for one of those three
-types knows why it is sitting in a file named after a different one.
+Not started; flagged so the next person to add a test for `PackageContext`
+knows why it is sitting in a file named after a different one.
 
 ## Structural classification cannot see through macros or type aliases
 
