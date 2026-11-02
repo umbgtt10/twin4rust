@@ -12,6 +12,7 @@ use twin4rust::text_report_renderer::TextReportRenderer;
 use twin4rust::workspace::workspace_description::WorkspaceDescription;
 
 const BEHAVIOUR: &str = "pub fn start() -> u32 {\n    1\n}\n";
+const DATA_HOLDER: &str = "pub struct Window {\n    pub start: u64,\n}\n";
 
 fn config() -> Config {
     Config {
@@ -45,6 +46,25 @@ fn run_hands_every_package_report_to_the_renderer_in_the_order_asked() {
 
     // Assert
     assert_eq!(outcome.output, "alpha=1\nbeta=2\n");
+}
+
+#[test]
+fn run_over_a_package_with_an_unearned_mirror_reports_a_gap() {
+    // Arrange
+    let reader = two_package_workspace();
+    let tree = InMemorySourceTree::new()
+        .with_file("/w/alpha/src/window.rs", DATA_HOLDER)
+        .with_file("/w/alpha/tests/window_tests.rs", "")
+        .with_file("/w/beta/src/engine.rs", BEHAVIOUR)
+        .with_file("/w/beta/tests/engine_tests.rs", "");
+
+    // Act
+    let outcome = Runner::new(&reader, &tree, &TextReportRenderer::new())
+        .run(&config())
+        .expect("run");
+
+    // Assert
+    assert!(outcome.has_gaps);
 }
 
 #[test]

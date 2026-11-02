@@ -16,6 +16,8 @@ flat list is sufficient.
 | [ADR-CargoSubcommandPackaging](ADR-CargoSubcommandPackaging.md) | The command publishes as `cargo-twin4rust` and strips the subcommand name cargo re-inserts at `argv[1]`; the library `twin4rust` publishes as `twin4rust-core`. |
 | [ADR-TechnologyFreeCore](ADR-TechnologyFreeCore.md) | The analysis is a `no_std` crate that touches no technology -- every piece of it behind a trait, implemented in `cli` -- so mutation testing it needs nothing but its own tests. |
 | [ADR-HumbleAdaptersAtUntestableBoundaries](ADR-HumbleAdaptersAtUntestableBoundaries.md) | A single type whose methods only hold or forward is exempt — a seam concentrates untestable code rather than removing it, so demanding one at a zero-logic boundary buys a tautology test and moves the gap rather than closing it. |
+| [ADR-RecordsFollowStern4rust](ADR-RecordsFollowStern4rust.md) | A data holder is a single type whose inherent methods are all getters, plain constructors or `with_` steps in stern4rust's shapes -- the two tools share one definition of a record. |
+| [ADR-AMirrorMustBeEarned](ADR-AMirrorMustBeEarned.md) | A mirrored test file for a source that earns none -- definitions or a data holder -- is reported and fails the run, because a test of a record tests the compiler. |
 
 ## Template
 

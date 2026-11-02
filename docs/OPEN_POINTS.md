@@ -117,8 +117,8 @@ types knows why it is sitting in a file named after a different one.
 
 Per `docs/ADRs/ADR-StructuralExclusionsOverSemanticImportance.md`, exclusions
 are decided from the `syn` AST with no type resolution. A data holder generated
-by a derive or declarative macro, or one whose `new` delegates to a helper for
-readability, does not match the trivial-constructor shape and is reported. A
+by a derive or declarative macro, or one whose constructor delegates to a helper
+for readability, does not match the data-holder shapes and is reported. A
 top-level macro invocation is treated the same way deliberately: it is not an
 ignorable item, so its mere presence keeps the file in scope.
 

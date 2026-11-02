@@ -1,7 +1,8 @@
 # Rules
 
 The complete policy: which files `twin4rust` expects a mirrored test for, where
-it expects to find it, and every reason it stays quiet. This is the canonical
+it expects to find it, which mirrors it refuses, and every reason it stays
+quiet. This is the canonical
 description — the README is a summary of it, and `docs/ARCHITECTURE.md`
 describes the code that implements it.
 
@@ -15,6 +16,14 @@ structural question:
 
 > For a production source file that should have a mirrored test, does the
 > expected mirrored test file exist?
+
+And its converse:
+
+> For a production source file that earns no mirrored test, is there one anyway?
+
+A mirror of a file of definitions or of a data holder can only test what the
+compiler already proves, so it is reported -- see
+[Mirrors a source does not earn](#mirrors-a-source-does-not-earn).
 
 That question is worth asking on its own precisely because coverage cannot
 answer it. A file can sit at 90% coverage purely as collateral from an
@@ -58,11 +67,13 @@ Per source file, in this order. The first rule that fires ends the check.
 2. file is an entry point — `src/lib.rs`, `src/main.rs`, `build.rs`, or a file
    directly under `src/bin/` → ignored
 3. file is a `mod.rs` whose top-level items are all imports → ignored
-4. file is definition-only, a trivial-constructor holder, or a humble adapter
-   → ignored
+4. file is a humble adapter, or definition-only with a trait's default method
+   → ignored, a mirror allowed
 5. no expected test path could be derived → ignored
-6. expected test path exists → satisfied
-7. otherwise → **reported**
+6. file is definition-only or a data holder: expected test path exists →
+   **reported as unearned**; otherwise → ignored
+7. expected test path exists → satisfied
+8. otherwise → **reported**
 
 ---
 
@@ -129,33 +140,40 @@ behaviour it expands to, so one opaque item disqualifies the whole file.
 Items carrying a `#[cfg(test)]` attribute are stripped before any of this is
 evaluated.
 
-### 5. Single-type files with a trivial constructor
+### 5. Data holders
 
 A file is also excluded when it holds:
 
-1. exactly one primary `struct` or `enum`
+1. exactly one primary `struct` or `enum`, declared before its impls
 2. no other top-level behaviour
-3. exactly one inherent `impl` block, for that same type
-4. containing exactly one method, which:
-   - is named `new`
-   - has no generics
-   - returns `Self`
-   - has a body that is a single struct-construction expression
-   - has no branching, no loops, no helper calls
-   - is not part of a trait implementation
+3. one or more inherent `impl` blocks for that same type
+4. whose every method is an accessor, in stern4rust's shapes:
+   - a **getter**: takes `&self` alone and reads one field of `self`, at most
+     through `as_deref`, `as_path`, `as_ref`, `as_slice`, `as_str`, `clone`,
+     `to_owned`, `to_string` or `to_vec`, behind `&`, `*` or parentheses
+   - a **plain constructor**, of any name: takes no receiver, returns its own type
+     -- `Self` or the type's name -- and builds it from bare parameters: a struct
+     literal with no `..rest` whose every field is a parameter, a tuple-struct
+     call of parameters, or the unit type itself when there are no parameters
+   - a **step**: takes `self` by value and one parameter, and replaces one field,
+     the rest `..self`
+5. at least one accessor in all
 
-Pure data holders exposing only a trivial constructor do not earn a test file.
+Pure data holders do not earn a test file. They are the records of stern4rust's
+`records-and-objects`, so the two tools agree on which types have nothing to
+test -- see [ADR-RecordsFollowStern4rust](ADRs/ADR-RecordsFollowStern4rust.md).
+A field built by a call, a conversion or arithmetic is work, and keeps the file
+in scope.
 
-Condition 2 is the one that does the work, and *any* second `impl` block
-violates it — a trait impl carrying a method, or a second inherent impl, both
-disqualify the file however trivial the `new` beside them is. The single
-exception is a trait impl carrying **no** methods, which rule 4 above already
-calls inert; that one is tolerated so the two rules agree on what behaviour
-means. A top-level macro invocation disqualifies here for the same reason it
-does under rule 4.
+Condition 2 is the one that does the work. A trait impl carrying a method
+disqualifies the file however plain the accessors beside it are -- a hand-written
+`fmt` or `from_str` is code a test can pin. The single exception is a trait impl
+carrying **no** methods, which rule 4 above already calls inert; that one is
+tolerated so the two rules agree on what behaviour means. A top-level macro
+invocation disqualifies here for the same reason it does under rule 4.
 
-This matters more than it looks, because a trivial constructor plus a
-behaviour-bearing trait impl is the shape of nearly every adapter behind a seam:
+This matters more than it looks, because a constructor plus a behaviour-bearing
+trait impl is the shape of nearly every adapter behind a seam:
 
 ```rust
 pub struct ChannelEiNotify<const N: usize> {
@@ -175,10 +193,10 @@ impl<const N: usize> EiNotify for ChannelEiNotify<N> {
 }
 ```
 
-The `new` holds. The trait impl is where the behaviour is, and it is reported.
-Whether such a file *deserves* a mirror is rule 6's question, not this one — and
-rule 6 asks it of the forwarding method itself rather than of the constructor
-standing next to it.
+The `new` is a plain constructor. The trait impl is where the behaviour is, and
+it is reported. Whether such a file *deserves* a mirror is rule 6's question, not
+this one — and rule 6 asks it of the forwarding method itself rather than of the
+constructor standing next to it.
 
 ```rust
 pub struct PeerRecoveryStatus {
@@ -195,10 +213,10 @@ impl PeerRecoveryStatus {
 
 ### 6. Humble adapters
 
-The rule above one method further along. A file is excluded when it holds
-exactly one `struct` or `enum`, no other top-level behaviour, and inherent
-`impl` blocks for that type whose every method is either the trivial `new`
-above or a **forwarding method**:
+One method further along. A file is excluded when it holds exactly one `struct`
+or `enum`, no other top-level behaviour, and inherent `impl` blocks for that type
+whose every method is either a `new` -- no generics, returning `Self`, its body a
+single struct literal -- or a **forwarding method**:
 
 - returns nothing — no return type, or `-> ()`
 - has a body of exactly one statement
@@ -242,13 +260,33 @@ exactly the point it starts carrying a decision worth pinning.
 The exclusions are narrow on purpose. All of these are reported:
 
 - free functions
-- a type with two or more methods
-- a `new` with any branching, loop or helper call
+- a type with a method that is not an accessor
+- a constructor whose fields are not bare parameters
 - a trait impl that carries at least one method
 - any file mixing definitions with behaviour
 
 A file with one type plus one impl is **not** automatically excluded. It leaves
-scope only by satisfying the trivial-constructor rule exactly.
+scope only by satisfying the data-holder rule exactly.
+
+---
+
+## Mirrors a source does not earn
+
+A mirror is reported when its source is definition-only (rule 4) or a data
+holder (rule 5) and carries no trait default method. Such a file has nothing to
+test: a test of it can only restate what the compiler proves -- a derived
+`Default` giving zeros, a clone equal to its original, a constructor keeping its
+arguments, a boxed trait object dispatching to what it holds.
+
+The source alone decides. The tool still never opens the test file
+([ADR-MirroredPathIsTheWholeContract](ADRs/ADR-MirroredPathIsTheWholeContract.md)):
+whatever the mirror holds, a source that earns none makes it a finding.
+
+A mirror is **allowed** -- neither demanded nor reported -- for a humble adapter
+(rule 6), whose forwarding is real code, and for definitions carrying a trait's
+default method, which is behaviour. Entry points, `mod.rs` files and
+`*-validation` sources have no mirror path at all. See
+[ADR-AMirrorMustBeEarned](ADRs/ADR-AMirrorMustBeEarned.md).
 
 ---
 
@@ -335,10 +373,27 @@ Files without a matching mirrored test file:
 summary: packages_with_gaps=2 missing_files=2
 ```
 
-Gaps are sorted by package name, then source path, then expected test path, so
-the report is stable across runs and diffable in CI.
+With a mirror a source does not earn:
 
-Exit code is `1` when any gap is reported and `0` otherwise.
+```text
+twin4rust report
+
+Files without a matching mirrored test file:
+- my-crate: src/foo.rs -> tests/foo_tests.rs
+
+Mirrored test files for sources that earn none:
+- my-crate: src/record.rs -> tests/record_tests.rs
+
+summary: packages_with_gaps=1 missing_files=1 unearned_mirrors=1
+```
+
+Each section, and the summary's `unearned_mirrors=`, appears only when it has
+something to show; a report with no unearned mirror has neither.
+
+Gaps and unearned mirrors are sorted by package name, then source path, then
+test path, so the report is stable across runs and diffable in CI.
+
+Exit code is `1` when any gap or unearned mirror is reported and `0` otherwise.
 
 ---
 

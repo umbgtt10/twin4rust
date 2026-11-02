@@ -6,6 +6,7 @@ use syn::Attribute;
 use syn::ItemMod;
 use syn::parse_str;
 use twin4rust::definition_analyzer::DefinitionAnalyzer;
+use twin4rust::mirror_expectation::MirrorExpectation;
 
 fn analyzer() -> DefinitionAnalyzer {
     DefinitionAnalyzer::new()
@@ -149,6 +150,112 @@ impl Send for Marker {}
 
     // Assert
     assert!(result);
+}
+
+#[test]
+fn mirror_expectation_of_a_behaviour_file_returns_required() {
+    // Arrange
+    let source = r#"
+pub fn start() -> u32 {
+    1
+}
+"#;
+
+    // Act
+    let result = analyzer().mirror_expectation(source).expect("valid source");
+
+    // Assert
+    assert_eq!(result, MirrorExpectation::Required);
+}
+
+#[test]
+fn mirror_expectation_of_a_data_holder_returns_unearned() {
+    // Arrange
+    let source = r#"
+pub struct Window {
+    pub start: u64,
+}
+impl Window {
+    pub fn new(start: u64) -> Self {
+        Self { start }
+    }
+}
+"#;
+
+    // Act
+    let result = analyzer().mirror_expectation(source).expect("valid source");
+
+    // Assert
+    assert_eq!(result, MirrorExpectation::Unearned);
+}
+
+#[test]
+fn mirror_expectation_of_a_definition_only_file_returns_unearned() {
+    // Arrange
+    let source = r#"
+pub struct Window {
+    pub start: u64,
+}
+"#;
+
+    // Act
+    let result = analyzer().mirror_expectation(source).expect("valid source");
+
+    // Assert
+    assert_eq!(result, MirrorExpectation::Unearned);
+}
+
+#[test]
+fn mirror_expectation_of_a_humble_adapter_returns_optional() {
+    // Arrange
+    let source = r#"
+pub struct BoardHalter {
+    board_id: BoardId,
+}
+impl BoardHalter {
+    pub fn halt(self) {
+        BoardEraser::new(self.board_id).erase();
+    }
+}
+"#;
+
+    // Act
+    let result = analyzer().mirror_expectation(source).expect("valid source");
+
+    // Assert
+    assert_eq!(result, MirrorExpectation::Optional);
+}
+
+#[test]
+fn mirror_expectation_of_a_trait_with_a_default_method_returns_optional() {
+    // Arrange
+    let source = r#"
+pub trait Greeter {
+    fn greet(&self) -> u32 {
+        1
+    }
+}
+"#;
+
+    // Act
+    let result = analyzer().mirror_expectation(source).expect("valid source");
+
+    // Assert
+    assert_eq!(result, MirrorExpectation::Optional);
+}
+
+#[test]
+fn mirror_expectation_of_an_empty_file_returns_required() {
+    // Arrange
+    let source = r#"
+
+"#;
+
+    // Act
+    let result = analyzer().mirror_expectation(source).expect("valid source");
+
+    // Assert
+    assert_eq!(result, MirrorExpectation::Required);
 }
 
 #[test]

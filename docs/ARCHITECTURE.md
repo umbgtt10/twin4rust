@@ -30,8 +30,9 @@ cli/src/main.rs
            per package, per source root:
              SourceTree::rust_files   -> every .rs file beneath it
              per file: SourceTree::read_source, exclusion rules,
-               then TestFileResolver
-             SourceTree::contains(mirror)? else a MissingTestGap
+               DefinitionAnalyzer::mirror_expectation, then TestFileResolver
+             SourceTree::contains(mirror)? a Required file without one is a
+               MissingTestGap, an Unearned file with one an UnearnedMirror
       3. ReportRenderer::render(&reports) -> String
       -> RunOutcome { output, has_gaps }
   → print!(output); exit code 1 if has_gaps, else 0          (cli)
@@ -68,9 +69,10 @@ Each is a trait in `core/src/traits/`, `Sync` so a `Runner` holding them stays
 | `Runner` | `core/src/runner.rs` | wires resolution → analysis → rendering, returns the verdict |
 | `ManifestResolver` | `core/src/manifest_resolver.rs` | package selection, `PackageContext` construction, path relativization |
 | `TargetRootCollector` | `core/src/target_root_collector.rs` | production-target filtering and source-root deduplication |
-| `Analyzer` | `core/src/analyzer.rs` | applies the exclusion rules and collects gaps, through the `SourceTree` |
-| `DefinitionAnalyzer` | `core/src/definition_analyzer.rs` | `syn` classification: definition-only, import-only `mod.rs`, `#[cfg(test)]` stripping |
-| `TrivialConstructorDetector` | `core/src/trivial_constructor_detector.rs` | the single-type-plus-trivial-`new` rule |
+| `Analyzer` | `core/src/analyzer.rs` | applies the exclusion rules and collects gaps and unearned mirrors, through the `SourceTree` |
+| `DefinitionAnalyzer` | `core/src/definition_analyzer.rs` | `syn` classification: a file's `MirrorExpectation`, import-only `mod.rs`, `#[cfg(test)]` stripping |
+| `DataHolderDetector` | `core/src/data_holder_detector.rs` | the single-type-of-accessors rule |
+| `AccessorClassifier` | `core/src/accessor_classifier.rs` | stern4rust's accessor shapes: getter, plain constructor, `with_` step |
 | `HumbleAdapterDetector` | `core/src/humble_adapter_detector.rs` | the same rule one method further along: forwarding methods |
 | `BehaviourlessImplDetector` | `core/src/behaviourless_impl_detector.rs` | whether one `impl` block carries executable behaviour |
 | `TestFileResolver` | `core/src/test_file_resolver.rs` | `src/<path>/<name>.rs` → `tests/<path>/<name>_tests.rs` |
@@ -86,20 +88,23 @@ Each is a trait in `core/src/traits/`, `Sync` so a `Runner` holding them stays
 | `TargetDescription` | one target | its kinds, its source path |
 | `PackageContext` | one resolved package | name, manifest dir, source roots |
 | `MissingTestGap` | one reported file | package name, relative source file, expected test file |
-| `AnalysisReport` | one analyzed package | package name plus its `Vec<MissingTestGap>` |
-| `RunOutcome` | one run | the rendered report and whether any mirror is missing |
-| `ConstructorScanState` | one trivial-constructor scan | the one type seen so far, and how many trivial-`new` impls name it |
+| `UnearnedMirror` | one reported mirror | package name, relative source file, the mirror that stands for it |
+| `MirrorExpectation` | one source file | `Required`, `Optional` or `Unearned`: what a mirror of it means |
+| `AnalysisReport` | one analyzed package | package name plus its `Vec<MissingTestGap>` and `Vec<UnearnedMirror>` |
+| `RunOutcome` | one run | the rendered report and whether any gap or unearned mirror was found |
+| `HolderScanState` | one data-holder scan | the one type seen so far, and how many accessors name it |
 
-The descriptions, `PackageContext`, `MissingTestGap`, `RunOutcome` and
-`ConstructorScanState` are plain data: records, their fields `pub`, built by
-literal. `AnalysisReport` is an object -- its fields are private, read through
-`package_name()` and `missing()` -- because it answers questions about them:
+The descriptions, `PackageContext`, `MissingTestGap`, `UnearnedMirror`,
+`RunOutcome` and `HolderScanState` are plain data: records, their fields `pub`,
+built by literal; `MirrorExpectation` is a data enum. `AnalysisReport` is an
+object -- its fields are private, read through `package_name()`, `missing()` and
+`unearned()` -- because it answers questions about them:
 `AnalysisReport::is_empty` is what `Runner` folds over to decide the verdict,
 and what `TextReportRenderer` counts for `packages_with_gaps`.
-`ConstructorScanState` is what `TrivialConstructorDetector` threads through its
-walk over a file's items, each step handing back the updated state rather than
-writing it through a `&mut` parameter. Nothing else uses it, so it is a private
-struct in `trivial_constructor_detector.rs` rather than a module of its own.
+`HolderScanState` is what `DataHolderDetector` threads through its walk over a
+file's items, each step handing back the updated state rather than writing it
+through a `&mut` parameter. Nothing else uses it, so it is a private struct in
+`data_holder_detector.rs` rather than a module of its own.
 
 The failures are records too: `SourceReadFailure` (a file the tree could not
 list or read), `WorkspaceReadFailure` (a workspace that could not be described),
@@ -108,22 +113,21 @@ way a run fails, wrapping the others with their causes.
 
 ## Why the behaviourless-impl question is its own type
 
-Both the definition-only rule and the trivial-constructor rule need to know
-whether an `impl` block carries a method, and only the first of them used to
-have the answer. The second admitted `Item::Impl(_)` outright, so a file holding
-a trivial `new` was exempt whatever else its impls did — the shape of every
-adapter behind a seam. Sharing one detector is what makes the two rules agree on
-the same definition of behaviour rather than each carrying its own.
+Both the definition-only rule and the data-holder rule need to know whether an
+`impl` block carries a method. A data-holder rule that admitted every impl block
+would exempt a file holding a constructor whatever else its impls did — the
+shape of every adapter behind a seam. Sharing one detector is what makes the two
+rules agree on the same definition of behaviour rather than each carrying its
+own.
 
 The definition is asymmetric on purpose: a *trait* impl with no methods is
 behaviourless, an *inherent* impl is not, even when empty. An inherent impl is
-the block the trivial-constructor and humble-adapter rules count, and calling an
-empty one inert would let them admit a second one while still claiming the file
-holds exactly one.
+the block the data-holder and humble-adapter rules examine, method by method;
+an empty one holds no accessor, so it earns a file no exemption on its own.
 
 ## Analysis is AST-structural
 
-`DefinitionAnalyzer` and `TrivialConstructorDetector` work on a `syn::File`
+`DefinitionAnalyzer` and `DataHolderDetector` work on a `syn::File`
 parsed from the source text. There is no type resolution and no build step, so
 the tool runs against any syntactically valid source whether or not the crate
 compiles, and whether or not its dependencies are vendored.

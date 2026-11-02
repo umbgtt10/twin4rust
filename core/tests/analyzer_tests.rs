@@ -5,6 +5,7 @@
 use crate::support::in_memory_source_tree::InMemorySourceTree;
 use twin4rust::analyzer::Analyzer;
 use twin4rust::package_context::PackageContext;
+use twin4rust::unearned_mirror::UnearnedMirror;
 use twin4rust::workspace::source_path::SourcePath;
 
 fn package_context(root: &str, name: &str) -> PackageContext {
@@ -231,6 +232,186 @@ fn analyze_package_with_a_file_that_does_not_parse_returns_an_error() {
 }
 
 #[test]
+fn analyze_package_with_a_mirror_for_a_data_holder_reports_it_unearned() {
+    // Arrange
+    let tree = InMemorySourceTree::new()
+        .with_file(
+            "/p/src/window.rs",
+            r#"
+pub struct Window {
+    pub start: u64,
+}
+impl Window {
+    pub fn new(start: u64) -> Self {
+        Self { start }
+    }
+}
+"#,
+        )
+        .with_file(
+            "/p/tests/window_tests.rs",
+            r#"
+
+"#,
+        );
+
+    // Act
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert_eq!(
+        report.unearned(),
+        &[UnearnedMirror {
+            package_name: "demo-node".to_string(),
+            relative_source_file: "src/window.rs".to_string(),
+            mirror_test_file: "tests/window_tests.rs".to_string(),
+        }]
+    );
+    assert!(report.missing().is_empty());
+}
+
+#[test]
+fn analyze_package_with_a_mirror_for_a_definition_only_file_reports_it_unearned() {
+    // Arrange
+    let tree = InMemorySourceTree::new()
+        .with_file(
+            "/p/src/window.rs",
+            r#"
+pub struct Window {
+    pub start: u64,
+}
+"#,
+        )
+        .with_file(
+            "/p/tests/window_tests.rs",
+            r#"
+
+"#,
+        );
+
+    // Act
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert_eq!(
+        report.unearned(),
+        &[UnearnedMirror {
+            package_name: "demo-node".to_string(),
+            relative_source_file: "src/window.rs".to_string(),
+            mirror_test_file: "tests/window_tests.rs".to_string(),
+        }]
+    );
+    assert!(report.missing().is_empty());
+}
+
+#[test]
+fn analyze_package_with_a_mirror_for_a_humble_adapter_reports_nothing() {
+    // Arrange
+    let tree = InMemorySourceTree::new()
+        .with_file(
+            "/p/src/board_halter.rs",
+            r#"
+pub struct BoardHalter {
+    board_id: BoardId,
+}
+impl BoardHalter {
+    pub fn halt(self) {
+        BoardEraser::new(self.board_id).erase();
+    }
+}
+"#,
+        )
+        .with_file(
+            "/p/tests/board_halter_tests.rs",
+            r#"
+
+"#,
+        );
+
+    // Act
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert!(
+        report.is_empty(),
+        "expected nothing reported, got: {:?}",
+        report
+    );
+}
+
+#[test]
+fn analyze_package_with_a_mirror_for_a_trait_with_a_default_method_reports_nothing() {
+    // Arrange
+    let tree = InMemorySourceTree::new()
+        .with_file(
+            "/p/src/greeter.rs",
+            r#"
+pub trait Greeter {
+    fn greet(&self) -> u32 {
+        1
+    }
+}
+"#,
+        )
+        .with_file(
+            "/p/tests/greeter_tests.rs",
+            r#"
+
+"#,
+        );
+
+    // Act
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert!(
+        report.is_empty(),
+        "expected nothing reported, got: {:?}",
+        report
+    );
+}
+
+#[test]
+fn analyze_package_with_a_mirror_for_behaviour_reports_nothing() {
+    // Arrange
+    let tree = InMemorySourceTree::new()
+        .with_file(
+            "/p/src/engine.rs",
+            r#"
+pub fn start() -> u32 {
+    1
+}
+"#,
+        )
+        .with_file(
+            "/p/tests/engine_tests.rs",
+            r#"
+
+"#,
+        );
+
+    // Act
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert!(
+        report.is_empty(),
+        "expected nothing reported, got: {:?}",
+        report
+    );
+}
+
+#[test]
 fn analyze_package_with_a_mirrored_test_file_reports_no_gap() {
     // Arrange
     let tree = InMemorySourceTree::new()
@@ -265,6 +446,36 @@ fn analyze_package_with_an_unreadable_file_names_it_in_the_error() {
     assert_eq!(
         result.err().map(|failure| failure.to_string()),
         Some(String::from("failed to read source file /p/src/locked.rs"))
+    );
+}
+
+#[test]
+fn analyze_package_without_a_mirror_for_a_data_holder_reports_nothing() {
+    // Arrange
+    let tree = InMemorySourceTree::new().with_file(
+        "/p/src/window.rs",
+        r#"
+pub struct Window {
+    pub start: u64,
+}
+impl Window {
+    pub fn new(start: u64) -> Self {
+        Self { start }
+    }
+}
+"#,
+    );
+
+    // Act
+    let report = Analyzer::new(&tree)
+        .analyze_package(&package_context("/p", "demo-node"))
+        .expect("analysis should succeed");
+
+    // Assert
+    assert!(
+        report.is_empty(),
+        "expected nothing reported, got: {:?}",
+        report
     );
 }
 
@@ -731,7 +942,7 @@ impl MessageSource {
 }
 
 #[test]
-fn single_struct_with_constructor_not_named_new_is_not_ignored() {
+fn single_struct_with_constructor_not_named_new_is_ignored() {
     // Arrange
     let tree = InMemorySourceTree::new().with_file(
         "/p/src/common_types/builder.rs",
@@ -755,11 +966,8 @@ impl Builder {
 
     // Assert
     assert!(
-        report
-            .missing()
-            .iter()
-            .any(|gap| gap.relative_source_file == "src/common_types/builder.rs"),
-        "struct with constructor not named new should not be ignored, got: {:?}",
+        report.is_empty(),
+        "struct with a plain constructor not named new should be ignored, got: {:?}",
         report.missing()
     );
 }

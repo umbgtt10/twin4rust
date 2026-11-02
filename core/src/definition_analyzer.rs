@@ -6,12 +6,13 @@ use alloc::string::ToString;
 use alloc::vec::Vec;
 
 use quote::ToTokens;
-use syn::{Attribute, File, Item, ItemImpl, ItemMod, parse_file};
+use syn::{Attribute, File, Item, ItemImpl, ItemMod, TraitItem, parse_file};
 
 use crate::behaviourless_impl_detector::BehaviourlessImplDetector;
+use crate::data_holder_detector::DataHolderDetector;
 use crate::humble_adapter_detector::HumbleAdapterDetector;
+use crate::mirror_expectation::MirrorExpectation;
 use crate::parse_failure::ParseFailure;
-use crate::trivial_constructor_detector::TrivialConstructorDetector;
 
 #[derive(Default)]
 pub struct DefinitionAnalyzer {
@@ -33,8 +34,12 @@ impl DefinitionAnalyzer {
     }
 
     pub fn is_definition_only_source(&self, source: &str) -> Result<bool, ParseFailure> {
+        Ok(self.mirror_expectation(source)? != MirrorExpectation::Required)
+    }
+
+    pub fn mirror_expectation(&self, source: &str) -> Result<MirrorExpectation, ParseFailure> {
         let syntax = parse_file(source).map_err(|cause| ParseFailure { cause })?;
-        Ok(self.file_is_definition_only(&syntax))
+        Ok(self.expectation_of(&syntax))
     }
 
     pub fn mod_file_is_import_only(&self, source: &str) -> Result<bool, ParseFailure> {
@@ -90,22 +95,40 @@ impl DefinitionAnalyzer {
             .count()
     }
 
-    fn file_is_definition_only(&self, syntax: &File) -> bool {
+    // A file of definitions or a data holder has nothing a mirror could test,
+    // so a mirror for one is a finding. A humble adapter has nothing worth one
+    // either, but its forwarding is real code, and a trait's default method is
+    // behaviour: a mirror of either is allowed rather than demanded.
+    fn expectation_of(&self, syntax: &File) -> MirrorExpectation {
         let items = self.top_level_non_test_items(&syntax.items);
 
         if items.is_empty() {
-            return false;
+            return MirrorExpectation::Required;
         }
 
-        if self.all_definition_only(&items) {
-            return self.count_declaring_items(&items) > 0;
+        let inert = (self.all_definition_only(&items) && self.count_declaring_items(&items) > 0)
+            || DataHolderDetector::new().file_is_data_holder(&items);
+        if inert {
+            return if Self::has_default_method(&items) {
+                MirrorExpectation::Optional
+            } else {
+                MirrorExpectation::Unearned
+            };
         }
 
-        if TrivialConstructorDetector::new().file_has_trivial_constructor(&items) {
-            return true;
+        if HumbleAdapterDetector::new().file_is_humble_adapter(&items) {
+            return MirrorExpectation::Optional;
         }
 
-        HumbleAdapterDetector::new().file_is_humble_adapter(&items)
+        MirrorExpectation::Required
+    }
+
+    fn has_default_method(items: &[&Item]) -> bool {
+        items.iter().any(|item| {
+            matches!(item, Item::Trait(item_trait) if item_trait.items.iter().any(|member| {
+                matches!(member, TraitItem::Fn(method) if method.default.is_some())
+            }))
+        })
     }
 
     fn top_level_non_test_items<'a>(&self, items: &'a [Item]) -> Vec<&'a Item> {

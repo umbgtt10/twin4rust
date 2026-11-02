@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- A mirrored test file for a source that earns none -- a file of definitions, or
+  a data holder -- is reported, in a section of its own headed "Mirrored test
+  files for sources that earn none", counted in the summary as
+  `unearned_mirrors=`, and fails the run. A humble adapter, and definitions
+  carrying a trait's default method, may have a mirror without one being
+  demanded. A report with no unearned mirror is unchanged.
+  ([ADR-AMirrorMustBeEarned](docs/ADRs/ADR-AMirrorMustBeEarned.md))
+- `DefinitionAnalyzer::mirror_expectation`, answering `MirrorExpectation`
+  `Required`, `Optional` or `Unearned` for a source; `UnearnedMirror`; and
+  `AccessorClassifier`, stern4rust's three accessor shapes.
+
+### Changed
+- Rule 5 is the data-holder rule: a single type whose inherent methods are all
+  getters, plain constructors or `with_` steps, in stern4rust's shapes, across
+  any number of inherent impl blocks, is exempt -- the records of stern4rust's
+  `records-and-objects`. A constructor's fields must be bare parameters.
+  ([ADR-RecordsFollowStern4rust](docs/ADRs/ADR-RecordsFollowStern4rust.md))
+- `TrivialConstructorDetector` is `DataHolderDetector`, its
+  `file_has_trivial_constructor` and `impl_is_trivial_constructor_only`
+  `file_is_data_holder` and `impl_holds_only_accessors`.
+- `AnalysisReport::new` takes the unearned mirrors beside the missing ones, and
+  `AnalysisReport::is_empty` counts both.
+
 ## [0.6.0] - 2026-10-27
 
 The tool's behaviour and command line are unchanged -- its stdout, stderr and

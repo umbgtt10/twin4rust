@@ -23,7 +23,8 @@ This is not a coverage tool. It does not measure lines, it does not measure
 branches, and it has no opinion on whether your tests are any good — it never
 opens the test file it is looking for.
 
-It answers one structural question: **does the mirrored test file exist?**
+It answers one structural question in two directions: **does the mirrored test
+file exist where one is needed, and is there one where none is earned?**
 
 That question is worth asking on its own, because line coverage cannot answer
 it. A source file can be at 90% coverage purely as collateral from an
@@ -104,8 +105,8 @@ cargo twin4rust --manifest-path Cargo.toml --package my-crate
 | `--manifest-path` | Cargo manifest to analyze. Defaults to the manifest in the current directory. |
 | `--package` | Package to analyze. Repeatable. If omitted, a single-package manifest is analyzed; a workspace requires at least one. |
 
-Exit code is `0` when every expected mirror exists and `1` when any is missing,
-so it drops into CI as-is. Gaps are sorted by package, then source path, so the
+Exit code is `0` when every expected mirror exists and no mirror stands for a
+source that earns none, and `1` otherwise, so it drops into CI as-is. Gaps are sorted by package, then source path, so the
 output is stable across runs and diffable.
 
 ## The mirror rule
@@ -139,9 +140,10 @@ test file for something with no behaviour to test.
   never seen
 - **Method-less trait impls**, such as `impl Marker for T {}` or a blanket
   `impl<T> Alias for T where ...`, which introduce nothing to assert
-- **Single-type files whose only `impl` is a trivial `new`** — one method, no
-  generics, returns `Self`, body is a single struct literal, no branching, no
-  loops, no helper calls. Pure data holders do not earn a test file.
+- **Data holders** — a single type whose inherent methods are all getters,
+  plain constructors or `with_` steps, in stern4rust's shapes: a getter reads one
+  field, a constructor builds its type from bare parameters, a step replaces one
+  field. Pure data holders do not earn a test file.
 - **Humble adapters** — a single type whose methods all either hold what they
   were given or *forward* it: return nothing, one statement, and that statement
   is a call. A method returning a value stays in scope however short its body,
@@ -153,6 +155,15 @@ Anything else stays in scope. A `new` with a branch in it, a second method, or
 a trait impl carrying at least one method all put the file back on the list. A
 file with no top-level items at all is reported rather than skipped — an empty
 source file is more likely an accident than a decision.
+
+## What it refuses
+
+A mirrored test file for a source that earns none -- a file of definitions, or a
+data holder -- is reported too, under "Mirrored test files for sources that earn
+none", and fails the run. A test of such a file can only restate what the
+compiler proves: that a derived `Default` gives zeros, that a clone equals its
+original, that a constructor keeps its arguments. A humble adapter, and a trait
+with a default method, may have a mirror without one being demanded.
 
 ## Known limitations
 

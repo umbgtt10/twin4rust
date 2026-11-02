@@ -7,11 +7,13 @@ use alloc::vec::Vec;
 use crate::analysis_report::AnalysisReport;
 use crate::definition_analyzer::DefinitionAnalyzer;
 use crate::manifest_resolver::ManifestResolver;
+use crate::mirror_expectation::MirrorExpectation;
 use crate::missing_test_gap::MissingTestGap;
 use crate::package_context::PackageContext;
 use crate::run_failure::RunFailure;
 use crate::test_file_resolver::TestFileResolver;
 use crate::traits::source_tree::SourceTree;
+use crate::unearned_mirror::UnearnedMirror;
 use crate::workspace::source_path::SourcePath;
 
 pub struct Analyzer<'a> {
@@ -31,15 +33,22 @@ impl<'a> Analyzer<'a> {
 
     pub fn analyze_package(&self, package: &PackageContext) -> Result<AnalysisReport, RunFailure> {
         let mut missing = Vec::new();
+        let mut unearned = Vec::new();
         for source_root in &package.source_roots {
-            missing.extend(self.process_source_root(source_root, package)?);
+            for finding in self.process_source_root(source_root, package)? {
+                match finding {
+                    Finding::Missing(gap) => missing.push(gap),
+                    Finding::Unearned(mirror) => unearned.push(mirror),
+                }
+            }
         }
         missing.sort_by(|left, right| {
             left.package_name
                 .cmp(&right.package_name)
                 .then_with(|| left.relative_source_file.cmp(&right.relative_source_file))
         });
-        Ok(AnalysisReport::new(package.name.clone(), missing))
+        unearned.sort_by(|left, right| left.relative_source_file.cmp(&right.relative_source_file));
+        Ok(AnalysisReport::new(package.name.clone(), missing, unearned))
     }
 
     pub fn analyze_packages(
@@ -56,7 +65,7 @@ impl<'a> Analyzer<'a> {
         &self,
         source_path: &SourcePath,
         package: &PackageContext,
-    ) -> Result<Option<MissingTestGap>, RunFailure> {
+    ) -> Result<Option<Finding>, RunFailure> {
         let relative_source = ManifestResolver::relative_file(&package.manifest_dir, source_path);
 
         if self.should_ignore_package_source(package, &relative_source) {
@@ -69,10 +78,8 @@ impl<'a> Analyzer<'a> {
             return Ok(None);
         }
 
-        if self
-            .definition_analyzer
-            .is_definition_only_source(&source)?
-        {
+        let expectation = self.definition_analyzer.mirror_expectation(&source)?;
+        if expectation == MirrorExpectation::Optional {
             return Ok(None);
         }
 
@@ -83,18 +90,21 @@ impl<'a> Analyzer<'a> {
             return Ok(None);
         };
 
-        if self.source_tree.contains(&expected_test) {
-            return Ok(None);
-        }
-
-        Ok(Some(MissingTestGap {
-            package_name: package.name.clone(),
-            relative_source_file: relative_source,
-            expected_test_file: ManifestResolver::relative_file(
-                &package.manifest_dir,
-                &expected_test,
-            ),
-        }))
+        let mirrored = self.source_tree.contains(&expected_test);
+        let test_file = ManifestResolver::relative_file(&package.manifest_dir, &expected_test);
+        Ok(match (expectation, mirrored) {
+            (MirrorExpectation::Required, false) => Some(Finding::Missing(MissingTestGap {
+                package_name: package.name.clone(),
+                relative_source_file: relative_source,
+                expected_test_file: test_file,
+            })),
+            (MirrorExpectation::Unearned, true) => Some(Finding::Unearned(UnearnedMirror {
+                package_name: package.name.clone(),
+                relative_source_file: relative_source,
+                mirror_test_file: test_file,
+            })),
+            _ => None,
+        })
     }
 
     // `src/bin/` is where cargo looks for a package's extra binaries, so a file
@@ -112,14 +122,14 @@ impl<'a> Analyzer<'a> {
         &self,
         source_root: &SourcePath,
         package: &PackageContext,
-    ) -> Result<Vec<MissingTestGap>, RunFailure> {
-        let mut missing = Vec::new();
+    ) -> Result<Vec<Finding>, RunFailure> {
+        let mut findings = Vec::new();
         for source_path in self.source_tree.rust_files(source_root)? {
-            if let Some(gap) = self.check_source_file(&source_path, package)? {
-                missing.push(gap);
+            if let Some(finding) = self.check_source_file(&source_path, package)? {
+                findings.push(finding);
             }
         }
-        Ok(missing)
+        Ok(findings)
     }
 
     fn should_ignore_package_source(
@@ -145,4 +155,9 @@ impl<'a> Analyzer<'a> {
 
         Ok(false)
     }
+}
+
+enum Finding {
+    Missing(MissingTestGap),
+    Unearned(UnearnedMirror),
 }

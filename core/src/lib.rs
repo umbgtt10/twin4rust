@@ -7,13 +7,16 @@
 
 extern crate alloc;
 
+pub mod accessor_classifier;
 pub mod analysis_report;
 pub mod analyzer;
 pub mod behaviourless_impl_detector;
 pub mod config;
+pub mod data_holder_detector;
 pub mod definition_analyzer;
 pub mod humble_adapter_detector;
 pub mod manifest_resolver;
+pub mod mirror_expectation;
 pub mod missing_test_gap;
 pub mod package_context;
 pub mod parse_failure;
@@ -24,5 +27,5 @@ pub mod target_root_collector;
 pub mod test_file_resolver;
 pub mod text_report_renderer;
 pub mod traits;
-pub mod trivial_constructor_detector;
+pub mod unearned_mirror;
 pub mod workspace;

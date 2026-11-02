@@ -6,12 +6,21 @@ use twin4rust::analysis_report::AnalysisReport;
 use twin4rust::missing_test_gap::MissingTestGap;
 use twin4rust::text_report_renderer::TextReportRenderer;
 use twin4rust::traits::report_renderer::ReportRenderer;
+use twin4rust::unearned_mirror::UnearnedMirror;
 
 fn gap(package_name: &str, stem: &str) -> MissingTestGap {
     MissingTestGap {
         package_name: package_name.to_string(),
         relative_source_file: format!("src/{stem}.rs"),
         expected_test_file: format!("tests/{stem}_tests.rs"),
+    }
+}
+
+fn unearned(package_name: &str, stem: &str) -> UnearnedMirror {
+    UnearnedMirror {
+        package_name: package_name.to_string(),
+        relative_source_file: format!("src/{stem}.rs"),
+        mirror_test_file: format!("tests/{stem}_tests.rs"),
     }
 }
 
@@ -31,11 +40,31 @@ fn render_empty_reports_says_every_expectation_is_satisfied() {
 }
 
 #[test]
+fn render_reports_with_missing_and_unearned_lists_both_and_counts_both() {
+    // Arrange
+    let reports = vec![AnalysisReport::new(
+        "pkg".to_string(),
+        vec![gap("pkg", "lib")],
+        vec![unearned("pkg", "window")],
+    )];
+
+    // Act
+    let output = TextReportRenderer::new().render(&reports);
+
+    // Assert
+    assert_eq!(
+        output,
+        "twin4rust report\n\nFiles without a matching mirrored test file:\n- pkg: src/lib.rs -> tests/lib_tests.rs\n\nMirrored test files for sources that earn none:\n- pkg: src/window.rs -> tests/window_tests.rs\n\nsummary: packages_with_gaps=1 missing_files=1 unearned_mirrors=1\n"
+    );
+}
+
+#[test]
 fn render_reports_with_missing_gaps_lists_each_and_the_summary() {
     // Arrange
     let reports = vec![AnalysisReport::new(
         "pkg".to_string(),
         vec![gap("pkg", "lib")],
+        vec![],
     )];
 
     // Act
@@ -55,8 +84,9 @@ fn render_reports_with_multiple_packages_and_gaps_sorts_them_and_counts_both() {
         AnalysisReport::new(
             "pkg-a".to_string(),
             vec![gap("pkg-a", "foo"), gap("pkg-a", "bar")],
+            vec![],
         ),
-        AnalysisReport::new("pkg-b".to_string(), vec![gap("pkg-b", "baz")]),
+        AnalysisReport::new("pkg-b".to_string(), vec![gap("pkg-b", "baz")], vec![]),
     ];
 
     // Act
@@ -72,7 +102,7 @@ fn render_reports_with_multiple_packages_and_gaps_sorts_them_and_counts_both() {
 #[test]
 fn render_reports_with_no_gaps_says_every_expectation_is_satisfied() {
     // Arrange
-    let reports = vec![AnalysisReport::new("pkg".to_string(), vec![])];
+    let reports = vec![AnalysisReport::new("pkg".to_string(), vec![], vec![])];
 
     // Act
     let output = TextReportRenderer::new().render(&reports);
@@ -81,5 +111,24 @@ fn render_reports_with_no_gaps_says_every_expectation_is_satisfied() {
     assert_eq!(
         output,
         "twin4rust report\n\nAll mirrored test-gap expectations are satisfied.\n"
+    );
+}
+
+#[test]
+fn render_reports_with_only_unearned_mirrors_lists_them_and_counts_them() {
+    // Arrange
+    let reports = vec![AnalysisReport::new(
+        "pkg".to_string(),
+        vec![],
+        vec![unearned("pkg", "window")],
+    )];
+
+    // Act
+    let output = TextReportRenderer::new().render(&reports);
+
+    // Assert
+    assert_eq!(
+        output,
+        "twin4rust report\n\nMirrored test files for sources that earn none:\n- pkg: src/window.rs -> tests/window_tests.rs\n\nsummary: packages_with_gaps=1 missing_files=0 unearned_mirrors=1\n"
     );
 }
