@@ -8,6 +8,7 @@ use syn::{ImplItem, Item, ItemImpl, Type};
 
 use crate::accessor_classifier::AccessorClassifier;
 use crate::behaviourless_impl_detector::BehaviourlessImplDetector;
+use syn::ItemMod;
 
 #[derive(Default)]
 pub struct DataHolderDetector {
@@ -75,7 +76,7 @@ impl DataHolderDetector {
             item,
             Item::Use(_)
                 | Item::ExternCrate(_)
-                | Item::Mod(syn::ItemMod { content: None, .. })
+                | Item::Mod(ItemMod { content: None, .. })
                 | Item::Const(_)
                 | Item::Static(_)
                 | Item::Type(_)
