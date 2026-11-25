@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Fixed
+- A constructor naming its own type through a module path -- returning
+  `crate::records::Holder`, or building `crate::records::Holder { id }` -- is a
+  plain constructor: the path's last segment is the type's name, and no segment
+  before it names a type, so `Self::Holder` and `Holder::Holder` are still
+  variants. A record built that way is a data holder, where it was reported as
+  wanting a mirror.
+
 ## [0.7.0] - 2026-11-02
 
 ### Added

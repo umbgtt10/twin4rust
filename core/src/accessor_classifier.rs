@@ -5,7 +5,9 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-use syn::{Expr, FnArg, ImplItemFn, Pat, Path, Receiver, ReturnType, Stmt, Type, UnOp};
+use syn::{
+    Expr, FnArg, ImplItemFn, Pat, Path, PathSegment, Receiver, ReturnType, Stmt, Type, UnOp,
+};
 
 // The three shapes stern4rust's `records-and-objects` lets a record carry: a
 // getter, a plain constructor and a `with_` step. A type whose methods are all
@@ -98,7 +100,10 @@ impl AccessorClassifier {
     }
 
     fn names_own_type(path: &Path, type_name: &str) -> bool {
-        path.segments.len() == 1 && (path.is_ident("Self") || path.segments[0].ident == type_name)
+        let names_a_type =
+            |segment: &PathSegment| segment.ident == "Self" || segment.ident == type_name;
+        let mut segments = path.segments.iter().rev();
+        segments.next().is_some_and(names_a_type) && !segments.any(names_a_type)
     }
 
     fn parameters(method: &ImplItemFn) -> Vec<String> {

@@ -39,6 +39,30 @@ fn is_accessor_on_a_build_step_returns_false() {
 }
 
 #[test]
+fn is_accessor_on_a_constructor_building_its_type_through_a_module_path_returns_true() {
+    // Arrange
+    let method = method("pub fn new(id: u32) -> Self { crate::records::Holder { id } }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(result);
+}
+
+#[test]
+fn is_accessor_on_a_constructor_calling_a_variant_through_its_type_returns_false() {
+    // Arrange
+    let method = method("pub fn new(id: u32) -> Self { Holder::Holder(id) }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
 fn is_accessor_on_a_constructor_delegating_to_a_conversion_returns_false() {
     // Arrange
     let method = method("pub fn new(id: u32) -> Self { Self::from(id) }");
@@ -76,6 +100,18 @@ fn is_accessor_on_a_constructor_of_another_type_returns_false() {
 }
 
 #[test]
+fn is_accessor_on_a_constructor_returning_a_variant_named_as_its_type_returns_false() {
+    // Arrange
+    let method = method("pub fn new(id: u32) -> Self { Self::Holder(id) }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
 fn is_accessor_on_a_constructor_returning_an_opaque_type_returns_false() {
     // Arrange
     let method = method("pub fn new(id: u32) -> impl Debug { Self { id } }");
@@ -85,6 +121,18 @@ fn is_accessor_on_a_constructor_returning_an_opaque_type_returns_false() {
 
     // Assert
     assert!(!result);
+}
+
+#[test]
+fn is_accessor_on_a_constructor_returning_its_type_through_a_module_path_returns_true() {
+    // Arrange
+    let method = method("pub fn new(id: u32) -> crate::records::Holder { Self { id } }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(result);
 }
 
 #[test]

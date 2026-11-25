@@ -152,9 +152,12 @@ A file is also excluded when it holds:
      through `as_deref`, `as_path`, `as_ref`, `as_slice`, `as_str`, `clone`,
      `to_owned`, `to_string` or `to_vec`, behind `&`, `*` or parentheses
    - a **plain constructor**, of any name: takes no receiver, returns its own type
-     -- `Self` or the type's name -- and builds it from bare parameters: a struct
-     literal with no `..rest` whose every field is a parameter, a tuple-struct
-     call of parameters, or the unit type itself when there are no parameters
+     -- `Self` or the type's name, alone or at the end of a module path such as
+     `crate::records::Holder` -- and builds it from bare parameters, naming the
+     type the same way: a struct literal with no `..rest` whose every field is a
+     parameter, a tuple-struct call of parameters, or the unit type itself when
+     there are no parameters. A path naming a type before its last segment --
+     `Self::Holder`, `Holder::Holder` -- names a variant, not the type
    - a **step**: takes `self` by value and one parameter, and replaces one field,
      the rest `..self`
 5. at least one accessor in all
