@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-25
+
+Three fixes move what the tool reports, each exempting a file it should have
+exempted: a humble adapter built by a plain constructor of any name, a record
+whose constructor names its type through a module path, and a file of unions.
+A mirror of the last two is now reported as unearned, so a run that passed
+under 0.7.0 can fail. Minor rather than patch for that, and because
+`HumbleAdapterDetector::new` takes an argument and the detector no longer
+implements `Default`.
+
 ### Added
 - `AccessorClassifier::is_plain_constructor`, the data-holder rule's plain
   constructor on its own.
