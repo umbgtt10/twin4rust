@@ -33,12 +33,7 @@ impl TestFileResolver {
         let base_name = relative_source.file_stem()?;
         let test_file_name = format!("{base_name}_tests.rs");
 
-        let parent = relative_source.parent();
-        match parent {
-            Some(parent) if !parent.as_str().is_empty() => {
-                Some(tests_root.join(parent.as_str()).join(&test_file_name))
-            }
-            _ => Some(tests_root.join(&test_file_name)),
-        }
+        let parent = relative_source.parent()?;
+        Some(tests_root.join(parent.as_str()).join(&test_file_name))
     }
 }
