@@ -17,10 +17,10 @@ This document describes the feature set currently shipped by
   binary stays in scope
 - Exclusion of `mod.rs`, both via an import-only fast path and structurally,
   because no expected path is derived for that filename
-- Exclusion of definition-only files: `struct`, `enum`, `type`, `trait`,
-  `const` and `static` declarations alongside ignorable `use`, `extern crate`
-  and bodiless `mod` items; a top-level macro or verbatim item keeps the file
-  in scope
+- Exclusion of definition-only files: `struct`, `enum`, `union`, `type`,
+  `trait`, `const` and `static` declarations alongside ignorable `use`,
+  `extern crate` and bodiless `mod` items; a top-level macro or verbatim item
+  keeps the file in scope
 - Exclusion of trait impls carrying no methods, such as `impl Marker for T {}`
   and blanket alias impls
 - Exclusion of single-type files whose only inherent `impl` is a trivial `new`:
@@ -30,7 +30,9 @@ This document describes the feature set currently shipped by
   so does a top-level macro invocation. Only a method-free trait impl is
   tolerated beside the constructor
 - Exclusion of humble adapters: a single type whose inherent methods are all
-  either that trivial `new` or a forwarding method — returns nothing, one
+  either a constructor or a forwarding method. A constructor is a plain
+  constructor of the data-holder rule's shape, or a trivial `new` whose fields
+  may be any expression; a forwarding method returns nothing, has one
   statement, and that statement is a call. At least one must forward, so an
   empty `impl` does not qualify
 - Exclusion of the `src/` tree of any package whose name ends in `-validation`,

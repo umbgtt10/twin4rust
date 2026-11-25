@@ -6,6 +6,64 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-25
+
+Three fixes move what the tool reports, each exempting a file it should have
+exempted: a humble adapter built by a plain constructor of any name, a record
+whose constructor names its type through a module path, and a file of unions.
+A mirror of the last two is now reported as unearned, so a run that passed
+under 0.7.0 can fail. Minor rather than patch for that, and because
+`HumbleAdapterDetector::new` takes an argument and the detector no longer
+implements `Default`.
+
+### Added
+- `AccessorClassifier::is_plain_constructor`, the data-holder rule's plain
+  constructor on its own.
+- Seventeen tests answering sentinel4rust's mutation round at `d9f4abb`: the
+  accessor shapes no test held on their own, the `#[cfg(test)]` stripping of
+  every item kind, an enum beside a record or an adapter, a humble `new` of two
+  statements, the text of a flat mirror and `SourcePath`'s `partial_cmp`.
+- Every commit message carries `core`'s grip and braintax and their ratio:
+  `cargo xtask grip-braintax` scores `core` as staged, and `.githooks/commit-msg`,
+  enabled once a clone by `just hooks`, writes the scores in above the trailers.
+
+### Changed
+- `HumbleAdapterDetector::new` takes the `AccessorClassifier` it asks, and
+  `HumbleAdapterDetector` no longer implements `Default`.
+- `TestFileResolver::expected_test_file` joins every mirror through its
+  source's parent, a flat source's empty one included, and `DefinitionAnalyzer`
+  drops an `Item::Verbatim` arm its wildcard answered; the paths stern4rust's
+  `imported-paths` will report are imports. No change in behaviour.
+
+### Removed
+- Three tests of records alone, which stern4rust 0.20.0's `behaviour-tests`
+  reports for restating what the compiler proves:
+  `config_clone_produces_independent_copy`,
+  `missing_test_gap_clone_produces_independent_copy` and
+  `missing_test_gap_partial_eq_compares_all_fields`. What they checked is
+  checked through behaviour.
+
+### Fixed
+- A humble adapter's constructor may be any plain constructor, as the
+  data-holder rule takes one -- of any name, naming its type or `Self`, building
+  a tuple struct -- as well as a trivial `new`, whose fields may be any
+  expression. A `fn with_id(id: u8) -> Self { Self { id } }` beside a forwarding
+  method made a file want a mirror, while a `new` computing a field beside the
+  same method did not; both are humble adapters now, a mirror allowed rather
+  than demanded.
+- A constructor naming its own type through a module path -- returning
+  `crate::records::Holder`, or building `crate::records::Holder { id }` -- is a
+  plain constructor: the path's last segment is the type's name, and no segment
+  before it names a type, so `Self::Holder` and `Holder::Holder` are still
+  variants. A record built that way is a data holder, where it was reported as
+  wanting a mirror.
+- A `union` is a definition, as a `struct` or an `enum` is: a file of unions,
+  or of unions beside other definitions, is definition-only, where it was
+  reported as wanting a mirror; a mirror of it is now reported as unearned.
+- RULES.md rule 5 asked a data holder for "one primary `struct` or `enum`",
+  but an enum can never be one: no accessor shape can be written for it. The
+  rule now asks for one `struct`, an enum beside it disqualifying the file.
+
 ## [0.7.0] - 2026-11-02
 
 ### Added

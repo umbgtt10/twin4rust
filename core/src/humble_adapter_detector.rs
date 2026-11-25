@@ -7,13 +7,18 @@ use alloc::vec::Vec;
 
 use syn::{Expr, ImplItem, ImplItemFn, Item, ItemImpl, ItemMod, ReturnType, Stmt, Type};
 
-#[derive(Default)]
-pub struct HumbleAdapterDetector;
+use crate::accessor_classifier::AccessorClassifier;
+
+pub struct HumbleAdapterDetector {
+    accessor_classifier: AccessorClassifier,
+}
 
 impl HumbleAdapterDetector {
     #[must_use]
-    pub fn new() -> Self {
-        Self
+    pub fn new(accessor_classifier: AccessorClassifier) -> Self {
+        Self {
+            accessor_classifier,
+        }
     }
 
     // A single type whose inherent methods all either hold what they were given
@@ -39,15 +44,16 @@ impl HumbleAdapterDetector {
 
         if !impls
             .iter()
-            .all(|item_impl| Self::impl_is_humble(item_impl, &type_name))
+            .all(|item_impl| self.impl_is_humble(item_impl, &type_name))
         {
             return false;
         }
 
         // At least one method must actually forward. Without this the rule would
         // swallow an empty `impl`, whose methods are all humble only because
-        // there are none, and a constructor-only file already answered for by
-        // `TrivialConstructorDetector` under stricter conditions.
+        // there are none, and a file of constructors alone, which
+        // `DataHolderDetector` answers for: it exempts one only when every
+        // constructor is plain, where a humble `new` may compute its fields.
         Self::has_forwarding_method(&impls)
     }
 
@@ -60,7 +66,7 @@ impl HumbleAdapterDetector {
         })
     }
 
-    fn impl_is_humble(item_impl: &ItemImpl, type_name: &str) -> bool {
+    fn impl_is_humble(&self, item_impl: &ItemImpl, type_name: &str) -> bool {
         if item_impl.trait_.is_some() {
             return false;
         }
@@ -78,7 +84,7 @@ impl HumbleAdapterDetector {
         }
 
         item_impl.items.iter().all(|impl_item| match impl_item {
-            ImplItem::Fn(method) => Self::method_is_humble(method),
+            ImplItem::Fn(method) => self.method_is_humble(method, type_name),
             _ => false,
         })
     }
@@ -132,8 +138,16 @@ impl HumbleAdapterDetector {
             && matches!(&method.block.stmts[0], Stmt::Expr(Expr::Struct(_), _))
     }
 
-    fn method_is_humble(method: &ImplItemFn) -> bool {
-        Self::is_trivial_constructor(method) || Self::is_forwarding(method)
+    // Whatever the data-holder rule takes as a record's constructor is taken
+    // here too, so a file does not leave the exemption by renaming `new` or by
+    // naming its type instead of `Self`. The trivial `new` stays beside it: its
+    // fields may be any expression, so an adapter may convert what it is given.
+    fn method_is_humble(&self, method: &ImplItemFn, type_name: &str) -> bool {
+        Self::is_trivial_constructor(method)
+            || self
+                .accessor_classifier
+                .is_plain_constructor(method, type_name)
+            || Self::is_forwarding(method)
     }
 
     fn returns_nothing(output: &ReturnType) -> bool {
@@ -146,18 +160,12 @@ impl HumbleAdapterDetector {
     }
 
     fn single_declared_type(items: &[&Item]) -> Option<String> {
-        let mut found: Option<String> = None;
-        for item in items {
-            let name = match item {
-                Item::Struct(item_struct) => item_struct.ident.to_string(),
-                Item::Enum(item_enum) => item_enum.ident.to_string(),
-                _ => continue,
-            };
-            if found.is_some() {
-                return None;
-            }
-            found = Some(name);
-        }
-        found
+        let mut names = items.iter().filter_map(|item| match item {
+            Item::Struct(item_struct) => Some(item_struct.ident.to_string()),
+            Item::Enum(item_enum) => Some(item_enum.ident.to_string()),
+            _ => None,
+        });
+        let first = names.next()?;
+        names.next().is_none().then_some(first)
     }
 }

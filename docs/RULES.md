@@ -117,8 +117,8 @@ The first is a fast path; the second is what actually makes the rule total.
 
 A file is definition-only when every top-level non-test item is one of:
 
-- `struct`, `enum`, `type`, `trait`, `const`, `static` — and at least one such
-  item is present
+- `struct`, `enum`, `union`, `type`, `trait`, `const`, `static` — and at least
+  one such item is present
 - `use`, `extern crate`, bodiless `mod`, which are ignorable rather than
   qualifying
 - a **trait impl carrying no methods**, such as `impl Marker for T {}` or a
@@ -126,7 +126,9 @@ A file is definition-only when every top-level non-test item is one of:
 
 An empty trait impl introduces no executable behaviour, so a mirrored test
 could only restate what the compiler already proved. A module of nothing but
-lookup tables is the same case: a `const` array has no branch to exercise.
+lookup tables is the same case: a `const` array has no branch to exercise. A
+`union` is a definition as a `struct` or an `enum` is: it declares a type and
+carries no behaviour of its own.
 
 A file with no top-level items at all is *not* definition-only, and is
 reported. An empty file is more likely an accident than a decision. A file of
@@ -144,7 +146,11 @@ evaluated.
 
 A file is also excluded when it holds:
 
-1. exactly one primary `struct` or `enum`, declared before its impls
+1. exactly one `struct`, declared before its impls. An `enum` counts as a type
+   too, so one beside the struct disqualifies the file; and an enum is never
+   the type itself, because no accessor shape can be written for one: it has no
+   field of `self` to read or replace, and building one names a variant --
+   `Self::Variant` -- which no constructor shape accepts
 2. no other top-level behaviour
 3. one or more inherent `impl` blocks for that same type
 4. whose every method is an accessor, in stern4rust's shapes:
@@ -152,9 +158,12 @@ A file is also excluded when it holds:
      through `as_deref`, `as_path`, `as_ref`, `as_slice`, `as_str`, `clone`,
      `to_owned`, `to_string` or `to_vec`, behind `&`, `*` or parentheses
    - a **plain constructor**, of any name: takes no receiver, returns its own type
-     -- `Self` or the type's name -- and builds it from bare parameters: a struct
-     literal with no `..rest` whose every field is a parameter, a tuple-struct
-     call of parameters, or the unit type itself when there are no parameters
+     -- `Self` or the type's name, alone or at the end of a module path such as
+     `crate::records::Holder` -- and builds it from bare parameters, naming the
+     type the same way: a struct literal with no `..rest` whose every field is a
+     parameter, a tuple-struct call of parameters, or the unit type itself when
+     there are no parameters. A path naming a type before its last segment --
+     `Self::Holder`, `Holder::Holder` -- names a variant, not the type
    - a **step**: takes `self` by value and one parameter, and replaces one field,
      the rest `..self`
 5. at least one accessor in all
@@ -215,14 +224,27 @@ impl PeerRecoveryStatus {
 
 One method further along. A file is excluded when it holds exactly one `struct`
 or `enum`, no other top-level behaviour, and inherent `impl` blocks for that type
-whose every method is either a `new` -- no generics, returning `Self`, its body a
-single struct literal -- or a **forwarding method**:
+whose every method is a **constructor** or a **forwarding method**.
+
+A constructor is either:
+
+- a **plain constructor**, of any name, in rule 5's shape, or
+- a `new` with no generics, returning `Self`, its body a single struct literal
+  whose fields may be any expression
+
+Whatever rule 5 takes as a record's constructor is taken here too, so a file does
+not leave the exemption by renaming `new`, by naming its type instead of `Self` or
+by building a tuple struct. The `new` stays beside it because an adapter often
+converts what it is given, as `BoardHalter` below turns `&str` into a `String`.
+
+A forwarding method:
 
 - returns nothing — no return type, or `-> ()`
 - has a body of exactly one statement
 - that statement is a call or a method call
 
-At least one method must actually forward, so an empty `impl` earns nothing.
+At least one method must actually forward, so an empty `impl` earns nothing, and
+neither does a file of constructors alone: rule 5 answers for that one.
 
 ```rust
 pub struct BoardHalter {
@@ -231,6 +253,10 @@ pub struct BoardHalter {
 }
 
 impl BoardHalter {
+    pub fn new(board_id: BoardId, probe_serial: &str) -> Self {
+        Self { board_id, probe_serial: probe_serial.to_string() }
+    }
+
     pub fn halt(self) {
         BoardEraser::new(self.board_id, &self.probe_serial).erase();
     }

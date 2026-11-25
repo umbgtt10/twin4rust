@@ -8,6 +8,7 @@ use alloc::vec::Vec;
 use quote::ToTokens;
 use syn::{Attribute, File, Item, ItemImpl, ItemMod, TraitItem, parse_file};
 
+use crate::accessor_classifier::AccessorClassifier;
 use crate::behaviourless_impl_detector::BehaviourlessImplDetector;
 use crate::data_holder_detector::DataHolderDetector;
 use crate::humble_adapter_detector::HumbleAdapterDetector;
@@ -68,6 +69,7 @@ impl DefinitionAnalyzer {
                     | Item::Static(_)
                     | Item::Struct(_)
                     | Item::Enum(_)
+                    | Item::Union(_)
                     | Item::Type(_)
                     | Item::Trait(_)
             ) || self.behaviourless_impl_detector.is_behaviourless_impl(item)
@@ -86,6 +88,7 @@ impl DefinitionAnalyzer {
                     item,
                     Item::Struct(_)
                         | Item::Enum(_)
+                        | Item::Union(_)
                         | Item::Type(_)
                         | Item::Trait(_)
                         | Item::Const(_)
@@ -116,7 +119,7 @@ impl DefinitionAnalyzer {
             };
         }
 
-        if HumbleAdapterDetector::new().file_is_humble_adapter(&items) {
+        if HumbleAdapterDetector::new(AccessorClassifier::new()).file_is_humble_adapter(&items) {
             return MirrorExpectation::Optional;
         }
 

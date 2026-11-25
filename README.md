@@ -133,11 +133,11 @@ test file for something with no behaviour to test.
   directly under `src/bin/`. A module *inside* a `src/bin/<name>/` binary stays
   in scope
 - **every `mod.rs`**, unconditionally — including one that carries behaviour
-- **Definition-only files**: every top-level item is a `struct`, `enum`, `type`,
-  `trait`, `const` or `static` declaration, or an ignorable `use`, `extern
-  crate` or bodiless `mod` — with at least one declaring kind present. A
-  top-level macro invocation keeps the file in scope, since its expansion is
-  never seen
+- **Definition-only files**: every top-level item is a `struct`, `enum`,
+  `union`, `type`, `trait`, `const` or `static` declaration, or an ignorable
+  `use`, `extern crate` or bodiless `mod` — with at least one declaring kind
+  present. A top-level macro invocation keeps the file in scope, since its
+  expansion is never seen
 - **Method-less trait impls**, such as `impl Marker for T {}` or a blanket
   `impl<T> Alias for T where ...`, which introduce nothing to assert
 - **Data holders** — a single type whose inherent methods are all getters,

@@ -5,7 +5,9 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 
-use syn::{Expr, FnArg, ImplItemFn, Pat, Path, Receiver, ReturnType, Stmt, Type, UnOp};
+use syn::{
+    Expr, FnArg, ImplItemFn, Pat, Path, PathSegment, Receiver, ReturnType, Stmt, Type, UnOp,
+};
 
 // The three shapes stern4rust's `records-and-objects` lets a record carry: a
 // getter, a plain constructor and a `with_` step. A type whose methods are all
@@ -33,27 +35,16 @@ impl AccessorClassifier {
     pub fn is_accessor(&self, method: &ImplItemFn, type_name: &str) -> bool {
         let body = Self::single_expression(method);
         Self::is_getter(method, body)
-            || Self::is_plain_constructor(method, body, type_name)
+            || self.is_plain_constructor(method, type_name)
             || Self::is_step(method, body, type_name)
     }
 
-    fn is_bare_parameter(expression: &Expr, parameters: &[String]) -> bool {
-        matches!(expression, Expr::Path(path)
-            if path.path.get_ident().is_some_and(|ident| parameters.contains(&ident.to_string())))
-    }
-
-    fn is_getter(method: &ImplItemFn, body: Option<&Expr>) -> bool {
-        let shared = Self::receiver(method)
-            .is_some_and(|receiver| receiver.reference.is_some() && receiver.mutability.is_none());
-        shared && method.sig.inputs.len() == 1 && body.is_some_and(Self::reads_one_field)
-    }
-
-    fn is_plain_constructor(method: &ImplItemFn, body: Option<&Expr>, type_name: &str) -> bool {
+    pub fn is_plain_constructor(&self, method: &ImplItemFn, type_name: &str) -> bool {
         if Self::receiver(method).is_some() || !Self::returns_own_type(method, type_name) {
             return false;
         }
         let parameters = Self::parameters(method);
-        match body {
+        match Self::single_expression(method) {
             Some(Expr::Struct(literal)) => {
                 literal.rest.is_none()
                     && Self::names_own_type(&literal.path, type_name)
@@ -74,6 +65,17 @@ impl AccessorClassifier {
             }
             _ => false,
         }
+    }
+
+    fn is_bare_parameter(expression: &Expr, parameters: &[String]) -> bool {
+        matches!(expression, Expr::Path(path)
+            if path.path.get_ident().is_some_and(|ident| parameters.contains(&ident.to_string())))
+    }
+
+    fn is_getter(method: &ImplItemFn, body: Option<&Expr>) -> bool {
+        let shared = Self::receiver(method)
+            .is_some_and(|receiver| receiver.reference.is_some() && receiver.mutability.is_none());
+        shared && method.sig.inputs.len() == 1 && body.is_some_and(Self::reads_one_field)
     }
 
     fn is_step(method: &ImplItemFn, body: Option<&Expr>, type_name: &str) -> bool {
@@ -98,7 +100,10 @@ impl AccessorClassifier {
     }
 
     fn names_own_type(path: &Path, type_name: &str) -> bool {
-        path.segments.len() == 1 && (path.is_ident("Self") || path.segments[0].ident == type_name)
+        let names_a_type =
+            |segment: &PathSegment| segment.ident == "Self" || segment.ident == type_name;
+        let mut segments = path.segments.iter().rev();
+        segments.next().is_some_and(names_a_type) && !segments.any(names_a_type)
     }
 
     fn parameters(method: &ImplItemFn) -> Vec<String> {
