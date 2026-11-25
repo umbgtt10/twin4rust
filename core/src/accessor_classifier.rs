@@ -3,11 +3,10 @@
 // SPDX-License-Identifier: MIT
 
 use alloc::string::{String, ToString};
-use alloc::vec::Vec;
 
-use syn::{
-    Expr, FnArg, ImplItemFn, Pat, Path, PathSegment, Receiver, ReturnType, Stmt, Type, UnOp,
-};
+use syn::{Expr, ImplItemFn, Path, PathSegment, ReturnType, Type, UnOp};
+
+use crate::syntax::method_parts::MethodParts;
 
 // The three shapes stern4rust's `records-and-objects` lets a record carry: a
 // getter, a plain constructor and a `with_` step. A type whose methods are all
@@ -33,18 +32,19 @@ impl AccessorClassifier {
     }
 
     pub fn is_accessor(&self, method: &ImplItemFn, type_name: &str) -> bool {
-        let body = Self::single_expression(method);
-        Self::is_getter(method, body)
+        let parts = MethodParts::new(method);
+        Self::is_getter(&parts)
             || self.is_plain_constructor(method, type_name)
-            || Self::is_step(method, body, type_name)
+            || Self::is_step(&parts, type_name)
     }
 
     pub fn is_plain_constructor(&self, method: &ImplItemFn, type_name: &str) -> bool {
-        if Self::receiver(method).is_some() || !Self::returns_own_type(method, type_name) {
+        let parts = MethodParts::new(method);
+        if parts.receiver().is_some() || !Self::returns_own_type(method, type_name) {
             return false;
         }
-        let parameters = Self::parameters(method);
-        match Self::single_expression(method) {
+        let parameters = parts.parameter_names();
+        match parts.single_expression() {
             Some(Expr::Struct(literal)) => {
                 literal.rest.is_none()
                     && Self::names_own_type(&literal.path, type_name)
@@ -72,16 +72,21 @@ impl AccessorClassifier {
             if path.path.get_ident().is_some_and(|ident| parameters.contains(&ident.to_string())))
     }
 
-    fn is_getter(method: &ImplItemFn, body: Option<&Expr>) -> bool {
-        let shared = Self::receiver(method)
+    fn is_getter(parts: &MethodParts) -> bool {
+        let shared = parts
+            .receiver()
             .is_some_and(|receiver| receiver.reference.is_some() && receiver.mutability.is_none());
-        shared && method.sig.inputs.len() == 1 && body.is_some_and(Self::reads_one_field)
+        shared
+            && parts.input_count() == 1
+            && parts.single_expression().is_some_and(Self::reads_one_field)
     }
 
-    fn is_step(method: &ImplItemFn, body: Option<&Expr>, type_name: &str) -> bool {
-        let by_value = Self::receiver(method).is_some_and(|receiver| receiver.reference.is_none());
-        let parameters = Self::parameters(method);
-        let Some(Expr::Struct(literal)) = body else {
+    fn is_step(parts: &MethodParts, type_name: &str) -> bool {
+        let by_value = parts
+            .receiver()
+            .is_some_and(|receiver| receiver.reference.is_none());
+        let parameters = parts.parameter_names();
+        let Some(Expr::Struct(literal)) = parts.single_expression() else {
             return false;
         };
         let rest_is_self = literal
@@ -106,21 +111,6 @@ impl AccessorClassifier {
         segments.next().is_some_and(names_a_type) && !segments.any(names_a_type)
     }
 
-    fn parameters(method: &ImplItemFn) -> Vec<String> {
-        method
-            .sig
-            .inputs
-            .iter()
-            .filter_map(|input| match input {
-                FnArg::Typed(typed) => match &*typed.pat {
-                    Pat::Ident(binding) => Some(binding.ident.to_string()),
-                    _ => None,
-                },
-                FnArg::Receiver(_) => None,
-            })
-            .collect()
-    }
-
     fn reads_one_field(expression: &Expr) -> bool {
         match expression {
             Expr::Paren(inner) => Self::reads_one_field(&inner.expr),
@@ -142,22 +132,8 @@ impl AccessorClassifier {
         }
     }
 
-    fn receiver(method: &ImplItemFn) -> Option<&Receiver> {
-        match method.sig.inputs.first() {
-            Some(FnArg::Receiver(receiver)) => Some(receiver),
-            _ => None,
-        }
-    }
-
     fn returns_own_type(method: &ImplItemFn, type_name: &str) -> bool {
         matches!(&method.sig.output, ReturnType::Type(_, output)
             if matches!(&**output, Type::Path(path) if path.qself.is_none() && Self::names_own_type(&path.path, type_name)))
-    }
-
-    fn single_expression(method: &ImplItemFn) -> Option<&Expr> {
-        match method.block.stmts.as_slice() {
-            [Stmt::Expr(expression, None)] => Some(expression),
-            _ => None,
-        }
     }
 }

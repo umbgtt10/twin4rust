@@ -73,6 +73,7 @@ Each is a trait in `core/src/traits/`, `Sync` so a `Runner` holding them stays
 | `DefinitionAnalyzer` | `core/src/definition_analyzer.rs` | `syn` classification: a file's `MirrorExpectation`, import-only `mod.rs`, `#[cfg(test)]` stripping |
 | `DataHolderDetector` | `core/src/data_holder_detector.rs` | the single-type-of-accessors rule |
 | `AccessorClassifier` | `core/src/accessor_classifier.rs` | stern4rust's accessor shapes: getter, plain constructor, `with_` step |
+| `MethodParts` | `core/src/syntax/method_parts.rs` | what `AccessorClassifier` reads of one method: its receiver, its input count, its parameters' names, the one expression that is its whole body |
 | `HumbleAdapterDetector` | `core/src/humble_adapter_detector.rs` | the same rule one method further along: forwarding methods, beside `AccessorClassifier`'s plain constructors or a trivial `new` |
 | `BehaviourlessImplDetector` | `core/src/behaviourless_impl_detector.rs` | whether one `impl` block carries executable behaviour |
 | `TestFileResolver` | `core/src/test_file_resolver.rs` | `src/<path>/<name>.rs` → `tests/<path>/<name>_tests.rs` |
