@@ -161,7 +161,6 @@ impl ItemAttrs for Item {
             Item::Type(item) => &item.attrs,
             Item::Union(item) => &item.attrs,
             Item::Use(item) => &item.attrs,
-            Item::Verbatim(_) => &[],
             _ => &[],
         }
     }

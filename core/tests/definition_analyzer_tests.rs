@@ -190,6 +190,48 @@ impl Window {
 }
 
 #[test]
+fn mirror_expectation_of_a_definition_beside_test_only_behaviour_returns_unearned() {
+    // Arrange
+    let source = r#"
+pub struct Config;
+
+#[cfg(test)]
+fn helper() {}
+
+#[cfg(test)]
+impl Config {
+    fn fixture() -> u32 {
+        7
+    }
+}
+
+#[cfg(test)]
+macro_rules! fixture {
+    () => {};
+}
+
+#[cfg(test)]
+extern "C" {
+    fn probe();
+}
+
+#[cfg(test)]
+trait Cloned = Clone;
+
+#[cfg(test)]
+union Bits {
+    word: u32,
+}
+"#;
+
+    // Act
+    let result = analyzer().mirror_expectation(source).expect("valid source");
+
+    // Assert
+    assert_eq!(result, MirrorExpectation::Unearned);
+}
+
+#[test]
 fn mirror_expectation_of_a_definition_only_file_returns_unearned() {
     // Arrange
     let source = r#"
@@ -249,6 +291,40 @@ fn mirror_expectation_of_an_empty_file_returns_required() {
     // Arrange
     let source = r#"
 
+"#;
+
+    // Act
+    let result = analyzer().mirror_expectation(source).expect("valid source");
+
+    // Assert
+    assert_eq!(result, MirrorExpectation::Required);
+}
+
+#[test]
+fn mirror_expectation_of_an_import_beside_test_only_declarations_returns_required() {
+    // Arrange
+    let source = r#"
+use core::fmt;
+
+#[cfg(test)]
+const LIMIT: u32 = 1;
+
+#[cfg(test)]
+enum Phase {
+    Open,
+}
+
+#[cfg(test)]
+static COUNT: u32 = 0;
+
+#[cfg(test)]
+struct Fixture;
+
+#[cfg(test)]
+trait Probe {}
+
+#[cfg(test)]
+type Alias = u32;
 "#;
 
     // Act
