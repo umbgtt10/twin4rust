@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- `syntax::method_parts::MethodParts`, what `AccessorClassifier` reads of one
+  method: its receiver, how many inputs it takes, its parameters' names and the
+  one expression that is its whole body. It opens a `syntax` module, readings
+  of syn's tree that apply no rule of their own: `core/src` already held the 20
+  files stern4rust's `directory-file-count` allows a directory.
+
+### Changed
+- `AccessorClassifier` reads a method through `MethodParts` rather than three
+  private functions of its own. cargo-iceberg4rust 0.5.0, which counts control
+  flow inside a closure, scored `accessor_classifier.rs` 9.29 against the
+  gate's ceiling of 9.1; it scores 4.49 now. No change in behaviour.
+
 ## [0.8.0] - 2026-11-25
 
 Three fixes move what the tool reports, each exempting a file it should have

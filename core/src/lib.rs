@@ -23,6 +23,7 @@ pub mod parse_failure;
 pub mod run_failure;
 pub mod run_outcome;
 pub mod runner;
+pub mod syntax;
 pub mod target_root_collector;
 pub mod test_file_resolver;
 pub mod text_report_renderer;

@@ -14,6 +14,7 @@ pub mod parse_failure_tests;
 pub mod run_failure_tests;
 pub mod runner_tests;
 pub mod support;
+pub mod syntax;
 pub mod target_root_collector_tests;
 pub mod test_file_resolver_tests;
 pub mod text_report_renderer_tests;
