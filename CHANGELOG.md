@@ -9,10 +9,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 - `AccessorClassifier::is_plain_constructor`, the data-holder rule's plain
   constructor on its own.
+- Seventeen tests answering sentinel4rust's mutation round at `d9f4abb`: the
+  accessor shapes no test held on their own, the `#[cfg(test)]` stripping of
+  every item kind, an enum beside a record or an adapter, a humble `new` of two
+  statements, the text of a flat mirror and `SourcePath`'s `partial_cmp`.
+- Every commit message carries `core`'s grip and braintax and their ratio:
+  `cargo xtask grip-braintax` scores `core` as staged, and `.githooks/commit-msg`,
+  enabled once a clone by `just hooks`, writes the scores in above the trailers.
 
 ### Changed
 - `HumbleAdapterDetector::new` takes the `AccessorClassifier` it asks, and
   `HumbleAdapterDetector` no longer implements `Default`.
+- `TestFileResolver::expected_test_file` joins every mirror through its
+  source's parent, a flat source's empty one included, and `DefinitionAnalyzer`
+  drops an `Item::Verbatim` arm its wildcard answered; the paths stern4rust's
+  `imported-paths` will report are imports. No change in behaviour.
+
+### Removed
+- Three tests of records alone, which stern4rust 0.20.0's `behaviour-tests`
+  reports for restating what the compiler proves:
+  `config_clone_produces_independent_copy`,
+  `missing_test_gap_clone_produces_independent_copy` and
+  `missing_test_gap_partial_eq_compares_all_fields`. What they checked is
+  checked through behaviour.
 
 ### Fixed
 - A humble adapter's constructor may be any plain constructor, as the
