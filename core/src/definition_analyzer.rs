@@ -69,6 +69,7 @@ impl DefinitionAnalyzer {
                     | Item::Static(_)
                     | Item::Struct(_)
                     | Item::Enum(_)
+                    | Item::Union(_)
                     | Item::Type(_)
                     | Item::Trait(_)
             ) || self.behaviourless_impl_detector.is_behaviourless_impl(item)
@@ -87,6 +88,7 @@ impl DefinitionAnalyzer {
                     item,
                     Item::Struct(_)
                         | Item::Enum(_)
+                        | Item::Union(_)
                         | Item::Type(_)
                         | Item::Trait(_)
                         | Item::Const(_)

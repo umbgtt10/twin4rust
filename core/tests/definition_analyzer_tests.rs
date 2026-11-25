@@ -312,6 +312,23 @@ pub trait Greeter {
 }
 
 #[test]
+fn mirror_expectation_of_a_union_returns_unearned() {
+    // Arrange
+    let source = r#"
+pub union Bits {
+    word: u32,
+    bytes: [u8; 4],
+}
+"#;
+
+    // Act
+    let result = analyzer().mirror_expectation(source).expect("valid source");
+
+    // Assert
+    assert_eq!(result, MirrorExpectation::Unearned);
+}
+
+#[test]
 fn mirror_expectation_of_an_empty_file_returns_required() {
     // Arrange
     let source = r#"

@@ -28,6 +28,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   before it names a type, so `Self::Holder` and `Holder::Holder` are still
   variants. A record built that way is a data holder, where it was reported as
   wanting a mirror.
+- A `union` is a definition, as a `struct` or an `enum` is: a file of unions,
+  or of unions beside other definitions, is definition-only, where it was
+  reported as wanting a mirror; a mirror of it is now reported as unearned.
 
 ## [0.7.0] - 2026-11-02
 

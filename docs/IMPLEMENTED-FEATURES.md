@@ -17,10 +17,10 @@ This document describes the feature set currently shipped by
   binary stays in scope
 - Exclusion of `mod.rs`, both via an import-only fast path and structurally,
   because no expected path is derived for that filename
-- Exclusion of definition-only files: `struct`, `enum`, `type`, `trait`,
-  `const` and `static` declarations alongside ignorable `use`, `extern crate`
-  and bodiless `mod` items; a top-level macro or verbatim item keeps the file
-  in scope
+- Exclusion of definition-only files: `struct`, `enum`, `union`, `type`,
+  `trait`, `const` and `static` declarations alongside ignorable `use`,
+  `extern crate` and bodiless `mod` items; a top-level macro or verbatim item
+  keeps the file in scope
 - Exclusion of trait impls carrying no methods, such as `impl Marker for T {}`
   and blanket alias impls
 - Exclusion of single-type files whose only inherent `impl` is a trivial `new`:

@@ -117,8 +117,8 @@ The first is a fast path; the second is what actually makes the rule total.
 
 A file is definition-only when every top-level non-test item is one of:
 
-- `struct`, `enum`, `type`, `trait`, `const`, `static` — and at least one such
-  item is present
+- `struct`, `enum`, `union`, `type`, `trait`, `const`, `static` — and at least
+  one such item is present
 - `use`, `extern crate`, bodiless `mod`, which are ignorable rather than
   qualifying
 - a **trait impl carrying no methods**, such as `impl Marker for T {}` or a
@@ -126,7 +126,9 @@ A file is definition-only when every top-level non-test item is one of:
 
 An empty trait impl introduces no executable behaviour, so a mirrored test
 could only restate what the compiler already proved. A module of nothing but
-lookup tables is the same case: a `const` array has no branch to exercise.
+lookup tables is the same case: a `const` array has no branch to exercise. A
+`union` is a definition as a `struct` or an `enum` is: it declares a type and
+carries no behaviour of its own.
 
 A file with no top-level items at all is *not* definition-only, and is
 reported. An empty file is more likely an accident than a decision. A file of
