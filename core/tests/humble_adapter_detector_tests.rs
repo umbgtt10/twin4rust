@@ -233,6 +233,58 @@ impl RttChannelConfig {
 }
 
 #[test]
+fn file_is_humble_adapter_for_a_new_of_two_statements_returns_false() {
+    // Arrange & Act
+    let humble = is_humble(
+        r#"
+pub struct Halter {
+    id: u8,
+}
+
+impl Halter {
+    pub fn new(id: u8) -> Self {
+        let id = id + 1;
+        Self { id }
+    }
+
+    pub fn halt(&self) {
+        driver::halt(self.id);
+    }
+}
+"#,
+    );
+
+    // Assert
+    assert!(!humble);
+}
+
+#[test]
+fn file_is_humble_adapter_for_a_struct_beside_an_enum_returns_false() {
+    // Arrange & Act
+    let humble = is_humble(
+        r#"
+pub struct Halter {
+    id: u8,
+}
+
+pub enum Mode {
+    Soft,
+    Hard,
+}
+
+impl Halter {
+    pub fn halt(&self) {
+        driver::halt(self.id);
+    }
+}
+"#,
+    );
+
+    // Assert
+    assert!(!humble);
+}
+
+#[test]
 fn file_is_humble_adapter_for_a_trait_impl_returns_false() {
     // Arrange & Act
     let humble = is_humble(

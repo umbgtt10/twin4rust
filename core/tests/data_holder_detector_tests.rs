@@ -320,6 +320,34 @@ impl Send for Marker {}
 }
 
 #[test]
+fn file_is_data_holder_with_an_enum_beside_the_record_returns_false() {
+    // Arrange
+    let parsed = parse_items(
+        r#"
+pub struct Snapshot {
+    height: u64,
+}
+impl Snapshot {
+    pub fn height(&self) -> u64 {
+        self.height
+    }
+}
+pub enum Phase {
+    Open,
+    Closed,
+}
+"#,
+    );
+    let items: Vec<&Item> = parsed.iter().collect();
+
+    // Act
+    let result = detector().file_is_data_holder(&items);
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
 fn foreign_mod_item_returns_false() {
     // Arrange
     let parsed = parse_items(

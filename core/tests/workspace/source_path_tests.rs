@@ -213,6 +213,19 @@ fn parent_of_the_root_returns_none() {
 }
 
 #[test]
+fn partial_cmp_orders_paths_by_component_rather_than_by_byte() {
+    // Arrange
+    let nested = path("/a/b");
+    let sibling = path("/a-b");
+
+    // Act
+    let order = nested.partial_cmp(&sibling);
+
+    // Assert
+    assert_eq!(order, Some(Ordering::Less));
+}
+
+#[test]
 fn strip_prefix_of_a_sibling_sharing_the_prefix_text_returns_none() {
     // Arrange
     let base = path("/home/user/project");

@@ -27,6 +27,22 @@ fn deeply_nested_source_preserves_full_path() {
 }
 
 #[test]
+fn expected_test_file_of_a_flat_source_returns_the_mirror_text_under_tests() {
+    // Arrange
+    let manifest = manifest_dir();
+    let source = manifest.join("src/helper.rs");
+
+    // Act
+    let result = resolver().expected_test_file(&manifest, &source);
+
+    // Assert
+    assert_eq!(
+        result.map(|mirror| String::from(mirror.as_str())),
+        Some(String::from("/home/user/project/tests/helper_tests.rs"))
+    );
+}
+
+#[test]
 fn flat_source_file_maps_to_tests_root() {
     // Arrange
     let manifest = manifest_dir();

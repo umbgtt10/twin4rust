@@ -39,6 +39,18 @@ fn is_accessor_on_a_build_step_returns_false() {
 }
 
 #[test]
+fn is_accessor_on_a_constructor_delegating_to_a_conversion_returns_false() {
+    // Arrange
+    let method = method("pub fn new(id: u32) -> Self { Self::from(id) }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
 fn is_accessor_on_a_constructor_naming_its_type_returns_true() {
     // Arrange
     let method =
@@ -55,6 +67,30 @@ fn is_accessor_on_a_constructor_naming_its_type_returns_true() {
 fn is_accessor_on_a_constructor_of_another_type_returns_false() {
     // Arrange
     let method = method("pub fn new(id: u32) -> Other { Other { id } }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
+fn is_accessor_on_a_constructor_returning_an_opaque_type_returns_false() {
+    // Arrange
+    let method = method("pub fn new(id: u32) -> impl Debug { Self { id } }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
+fn is_accessor_on_a_constructor_taking_a_receiver_returns_false() {
+    // Arrange
+    let method = method("pub fn renew(&self, id: u32) -> Self { Self { id } }");
 
     // Act
     let result = classifier().is_accessor(&method, "Holder");
@@ -124,9 +160,33 @@ fn is_accessor_on_a_getter_cloning_a_field_returns_true() {
 }
 
 #[test]
+fn is_accessor_on_a_getter_dereferencing_a_field_returns_true() {
+    // Arrange
+    let method = method("pub fn id(&self) -> u32 { *self.id }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(result);
+}
+
+#[test]
 fn is_accessor_on_a_getter_lending_a_field_returns_true() {
     // Arrange
     let method = method("pub fn name(&self) -> &String { &self.name }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(result);
+}
+
+#[test]
+fn is_accessor_on_a_getter_reading_a_field_in_parentheses_returns_true() {
+    // Arrange
+    let method = method("pub fn id(&self) -> u32 { (self.id) }");
 
     // Act
     let result = classifier().is_accessor(&method, "Holder");
@@ -184,9 +244,45 @@ fn is_accessor_on_a_getter_with_a_parameter_returns_false() {
 }
 
 #[test]
+fn is_accessor_on_a_method_calling_another_method_on_a_field_returns_false() {
+    // Arrange
+    let method = method("pub fn count(&self) -> usize { self.items.len() }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
 fn is_accessor_on_a_method_computing_from_fields_returns_false() {
     // Arrange
     let method = method("pub fn total(&self) -> u32 { self.a + self.b }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
+fn is_accessor_on_a_method_lending_a_constant_returns_false() {
+    // Arrange
+    let method = method("pub fn limit(&self) -> &u32 { &LIMIT }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
+fn is_accessor_on_a_method_negating_a_field_returns_false() {
+    // Arrange
+    let method = method("pub fn is_off(&self) -> bool { !self.on }");
 
     // Act
     let result = classifier().is_accessor(&method, "Holder");
@@ -268,6 +364,18 @@ fn is_accessor_on_a_step_setting_two_fields_returns_false() {
 }
 
 #[test]
+fn is_accessor_on_a_step_with_a_computed_field_returns_false() {
+    // Arrange
+    let method = method("pub fn with_id(self, id: u32) -> Self { Self { id: id + 1, ..self } }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
 fn is_accessor_on_a_tuple_constructor_returns_true() {
     // Arrange
     let method = method("pub fn new(id: u32) -> Self { Self(id) }");
@@ -277,6 +385,18 @@ fn is_accessor_on_a_tuple_constructor_returns_true() {
 
     // Assert
     assert!(result);
+}
+
+#[test]
+fn is_accessor_on_a_tuple_constructor_with_a_computed_field_returns_false() {
+    // Arrange
+    let method = method("pub fn new(id: u32) -> Self { Self(id + 1) }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
 }
 
 #[test]
