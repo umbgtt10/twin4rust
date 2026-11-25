@@ -248,6 +248,31 @@ pub struct Window {
 }
 
 #[test]
+fn mirror_expectation_of_a_humble_adapter_built_by_a_plain_constructor_returns_optional() {
+    // Arrange
+    let source = r#"
+pub struct Halter {
+    id: u8,
+}
+impl Halter {
+    pub fn with_id(id: u8) -> Self {
+        Self { id }
+    }
+
+    pub fn halt(&self) {
+        driver::halt(self.id);
+    }
+}
+"#;
+
+    // Act
+    let result = analyzer().mirror_expectation(source).expect("valid source");
+
+    // Assert
+    assert_eq!(result, MirrorExpectation::Optional);
+}
+
+#[test]
 fn mirror_expectation_of_a_humble_adapter_returns_optional() {
     // Arrange
     let source = r#"

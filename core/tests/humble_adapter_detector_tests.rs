@@ -4,12 +4,13 @@
 
 use syn::parse_str;
 use syn::{File, Item};
+use twin4rust::accessor_classifier::AccessorClassifier;
 use twin4rust::humble_adapter_detector::HumbleAdapterDetector;
 
 fn is_humble(source: &str) -> bool {
     let items = items_of(source);
     let borrowed: Vec<&Item> = items.iter().collect();
-    HumbleAdapterDetector::new().file_is_humble_adapter(&borrowed)
+    HumbleAdapterDetector::new(AccessorClassifier::new()).file_is_humble_adapter(&borrowed)
 }
 
 fn items_of(source: &str) -> Vec<Item> {
@@ -66,6 +67,31 @@ impl Halter {
 }
 
 #[test]
+fn file_is_humble_adapter_for_a_computing_constructor_of_another_name_returns_false() {
+    // Arrange & Act
+    let humble = is_humble(
+        r#"
+pub struct Halter {
+    id: u8,
+}
+
+impl Halter {
+    pub fn with_id(id: u8) -> Self {
+        Self { id: id + 1 }
+    }
+
+    pub fn halt(&self) {
+        driver::halt(self.id);
+    }
+}
+"#,
+    );
+
+    // Assert
+    assert!(!humble);
+}
+
+#[test]
 fn file_is_humble_adapter_for_a_constructor_alone_returns_false() {
     // Arrange & Act
     let humble = is_humble(
@@ -84,6 +110,31 @@ impl Holder {
 
     // Assert
     assert!(!humble);
+}
+
+#[test]
+fn file_is_humble_adapter_for_a_constructor_naming_its_type_returns_true() {
+    // Arrange & Act
+    let humble = is_humble(
+        r#"
+pub struct Halter {
+    id: u8,
+}
+
+impl Halter {
+    pub fn new(id: u8) -> Halter {
+        Halter { id }
+    }
+
+    pub fn halt(&self) {
+        driver::halt(self.id);
+    }
+}
+"#,
+    );
+
+    // Assert
+    assert!(humble);
 }
 
 #[test]
@@ -259,6 +310,31 @@ impl Halter {
 }
 
 #[test]
+fn file_is_humble_adapter_for_a_plain_constructor_of_another_name_returns_true() {
+    // Arrange & Act
+    let humble = is_humble(
+        r#"
+pub struct Halter {
+    id: u8,
+}
+
+impl Halter {
+    pub fn with_id(id: u8) -> Self {
+        Self { id }
+    }
+
+    pub fn halt(&self) {
+        driver::halt(self.id);
+    }
+}
+"#,
+    );
+
+    // Assert
+    assert!(humble);
+}
+
+#[test]
 fn file_is_humble_adapter_for_a_struct_beside_an_enum_returns_false() {
     // Arrange & Act
     let humble = is_humble(
@@ -303,6 +379,29 @@ impl Halting for Halter {
 
     // Assert
     assert!(!humble);
+}
+
+#[test]
+fn file_is_humble_adapter_for_a_tuple_constructor_returns_true() {
+    // Arrange & Act
+    let humble = is_humble(
+        r#"
+pub struct Halter(u8);
+
+impl Halter {
+    pub fn new(id: u8) -> Self {
+        Self(id)
+    }
+
+    pub fn halt(&self) {
+        driver::halt(self.0);
+    }
+}
+"#,
+    );
+
+    // Assert
+    assert!(humble);
 }
 
 #[test]

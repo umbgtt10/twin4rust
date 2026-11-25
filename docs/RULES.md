@@ -218,14 +218,27 @@ impl PeerRecoveryStatus {
 
 One method further along. A file is excluded when it holds exactly one `struct`
 or `enum`, no other top-level behaviour, and inherent `impl` blocks for that type
-whose every method is either a `new` -- no generics, returning `Self`, its body a
-single struct literal -- or a **forwarding method**:
+whose every method is a **constructor** or a **forwarding method**.
+
+A constructor is either:
+
+- a **plain constructor**, of any name, in rule 5's shape, or
+- a `new` with no generics, returning `Self`, its body a single struct literal
+  whose fields may be any expression
+
+Whatever rule 5 takes as a record's constructor is taken here too, so a file does
+not leave the exemption by renaming `new`, by naming its type instead of `Self` or
+by building a tuple struct. The `new` stays beside it because an adapter often
+converts what it is given, as `BoardHalter` below turns `&str` into a `String`.
+
+A forwarding method:
 
 - returns nothing — no return type, or `-> ()`
 - has a body of exactly one statement
 - that statement is a call or a method call
 
-At least one method must actually forward, so an empty `impl` earns nothing.
+At least one method must actually forward, so an empty `impl` earns nothing, and
+neither does a file of constructors alone: rule 5 answers for that one.
 
 ```rust
 pub struct BoardHalter {
@@ -234,6 +247,10 @@ pub struct BoardHalter {
 }
 
 impl BoardHalter {
+    pub fn new(board_id: BoardId, probe_serial: &str) -> Self {
+        Self { board_id, probe_serial: probe_serial.to_string() }
+    }
+
     pub fn halt(self) {
         BoardEraser::new(self.board_id, &self.probe_serial).erase();
     }

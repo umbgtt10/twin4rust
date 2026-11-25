@@ -458,3 +458,39 @@ fn is_accessor_on_a_unit_constructor_returns_true() {
     // Assert
     assert!(result);
 }
+
+#[test]
+fn is_plain_constructor_on_a_getter_returns_false() {
+    // Arrange
+    let method = method("pub fn id(&self) -> u32 { self.id }");
+
+    // Act
+    let result = classifier().is_plain_constructor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
+fn is_plain_constructor_on_a_plain_constructor_returns_true() {
+    // Arrange
+    let method = method("pub fn with_id(id: u32) -> Self { Self { id } }");
+
+    // Act
+    let result = classifier().is_plain_constructor(&method, "Holder");
+
+    // Assert
+    assert!(result);
+}
+
+#[test]
+fn is_plain_constructor_on_a_step_returns_false() {
+    // Arrange
+    let method = method("pub fn with_id(self, id: u32) -> Self { Self { id, ..self } }");
+
+    // Act
+    let result = classifier().is_plain_constructor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
+}

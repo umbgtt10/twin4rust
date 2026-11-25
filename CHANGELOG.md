@@ -6,7 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Added
+- `AccessorClassifier::is_plain_constructor`, the data-holder rule's plain
+  constructor on its own.
+
+### Changed
+- `HumbleAdapterDetector::new` takes the `AccessorClassifier` it asks, and
+  `HumbleAdapterDetector` no longer implements `Default`.
+
 ### Fixed
+- A humble adapter's constructor may be any plain constructor, as the
+  data-holder rule takes one -- of any name, naming its type or `Self`, building
+  a tuple struct -- as well as a trivial `new`, whose fields may be any
+  expression. A `fn with_id(id: u8) -> Self { Self { id } }` beside a forwarding
+  method made a file want a mirror, while a `new` computing a field beside the
+  same method did not; both are humble adapters now, a mirror allowed rather
+  than demanded.
 - A constructor naming its own type through a module path -- returning
   `crate::records::Holder`, or building `crate::records::Holder { id }` -- is a
   plain constructor: the path's last segment is the type's name, and no segment

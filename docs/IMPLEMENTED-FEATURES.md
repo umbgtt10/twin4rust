@@ -30,7 +30,9 @@ This document describes the feature set currently shipped by
   so does a top-level macro invocation. Only a method-free trait impl is
   tolerated beside the constructor
 - Exclusion of humble adapters: a single type whose inherent methods are all
-  either that trivial `new` or a forwarding method — returns nothing, one
+  either a constructor or a forwarding method. A constructor is a plain
+  constructor of the data-holder rule's shape, or a trivial `new` whose fields
+  may be any expression; a forwarding method returns nothing, has one
   statement, and that statement is a call. At least one must forward, so an
   empty `impl` does not qualify
 - Exclusion of the `src/` tree of any package whose name ends in `-validation`,

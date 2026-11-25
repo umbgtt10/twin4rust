@@ -35,27 +35,16 @@ impl AccessorClassifier {
     pub fn is_accessor(&self, method: &ImplItemFn, type_name: &str) -> bool {
         let body = Self::single_expression(method);
         Self::is_getter(method, body)
-            || Self::is_plain_constructor(method, body, type_name)
+            || self.is_plain_constructor(method, type_name)
             || Self::is_step(method, body, type_name)
     }
 
-    fn is_bare_parameter(expression: &Expr, parameters: &[String]) -> bool {
-        matches!(expression, Expr::Path(path)
-            if path.path.get_ident().is_some_and(|ident| parameters.contains(&ident.to_string())))
-    }
-
-    fn is_getter(method: &ImplItemFn, body: Option<&Expr>) -> bool {
-        let shared = Self::receiver(method)
-            .is_some_and(|receiver| receiver.reference.is_some() && receiver.mutability.is_none());
-        shared && method.sig.inputs.len() == 1 && body.is_some_and(Self::reads_one_field)
-    }
-
-    fn is_plain_constructor(method: &ImplItemFn, body: Option<&Expr>, type_name: &str) -> bool {
+    pub fn is_plain_constructor(&self, method: &ImplItemFn, type_name: &str) -> bool {
         if Self::receiver(method).is_some() || !Self::returns_own_type(method, type_name) {
             return false;
         }
         let parameters = Self::parameters(method);
-        match body {
+        match Self::single_expression(method) {
             Some(Expr::Struct(literal)) => {
                 literal.rest.is_none()
                     && Self::names_own_type(&literal.path, type_name)
@@ -76,6 +65,17 @@ impl AccessorClassifier {
             }
             _ => false,
         }
+    }
+
+    fn is_bare_parameter(expression: &Expr, parameters: &[String]) -> bool {
+        matches!(expression, Expr::Path(path)
+            if path.path.get_ident().is_some_and(|ident| parameters.contains(&ident.to_string())))
+    }
+
+    fn is_getter(method: &ImplItemFn, body: Option<&Expr>) -> bool {
+        let shared = Self::receiver(method)
+            .is_some_and(|receiver| receiver.reference.is_some() && receiver.mutability.is_none());
+        shared && method.sig.inputs.len() == 1 && body.is_some_and(Self::reads_one_field)
     }
 
     fn is_step(method: &ImplItemFn, body: Option<&Expr>, type_name: &str) -> bool {
