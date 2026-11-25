@@ -31,6 +31,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - A `union` is a definition, as a `struct` or an `enum` is: a file of unions,
   or of unions beside other definitions, is definition-only, where it was
   reported as wanting a mirror; a mirror of it is now reported as unearned.
+- RULES.md rule 5 asked a data holder for "one primary `struct` or `enum`",
+  but an enum can never be one: no accessor shape can be written for it. The
+  rule now asks for one `struct`, an enum beside it disqualifying the file.
 
 ## [0.7.0] - 2026-11-02
 

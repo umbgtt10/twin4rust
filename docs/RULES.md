@@ -146,7 +146,11 @@ evaluated.
 
 A file is also excluded when it holds:
 
-1. exactly one primary `struct` or `enum`, declared before its impls
+1. exactly one `struct`, declared before its impls. An `enum` counts as a type
+   too, so one beside the struct disqualifies the file; and an enum is never
+   the type itself, because no accessor shape can be written for one: it has no
+   field of `self` to read or replace, and building one names a variant --
+   `Self::Variant` -- which no constructor shape accepts
 2. no other top-level behaviour
 3. one or more inherent `impl` blocks for that same type
 4. whose every method is an accessor, in stern4rust's shapes:
