@@ -5,7 +5,7 @@ This document describes the feature set currently shipped by
 [RULES.md](RULES.md); for released versions, see
 [CHANGELOG.md](../CHANGELOG.md).
 
-## Version 0.8.0
+## Version 0.9.0
 
 ### Analysis
 
@@ -74,7 +74,7 @@ This document describes the feature set currently shipped by
 - Two crates of one version: the command, published as `cargo-twin4rust` so
   cargo resolves `cargo twin4rust` (library `twin4rust_cli`), and the analysis,
   published as `twin4rust-core` (library `twin4rust`): `#![no_std]`, depending
-  on quote and syn alone
+  on quote and syn 3 alone
 - Conditional strip of the subcommand name cargo inserts at `argv[1]`, leaving
   direct invocation and a package named `twin4rust` both intact
 - `--version` and `bin_name`-corrected help output

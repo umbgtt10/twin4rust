@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-28
+
+Breaking for a dependent of `twin4rust-core`: it depends on syn 3 where it
+depended on syn 2, so every public function taking or returning syn's types
+takes and returns syn 3's, and it no longer turns on syn's `visit` feature for
+its dependents. It gains `MethodParts`, a reading of one method's receiver,
+parameters and body. `cargo twin4rust` reports what 0.8.0 reported: its output
+and exit codes are byte for byte the same on every workspace it was compared
+on. syn 2 leaves the dependency tree, and the documentation says what ships.
+
 ### Added
 - `syntax::method_parts::MethodParts`, what `AccessorClassifier` reads of one
   method: its receiver, how many inputs it takes, its parameters' names and the
@@ -60,6 +70,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   for it itself; a dependent that walked syn's tree through it names the
   feature itself. What `cargo twin4rust` reports is byte for byte the same on
   the same workspaces.
+
+### Fixed
+- The README, `cargo-twin4rust`'s page on crates.io, counted twenty-two of
+  stern4rust's rules where thirty-nine are enforced, and left cargo-deny,
+  stage 2's eighth gate, out of its list and its tool table.
+  IMPLEMENTED-FEATURES.md still described 0.4.0, ROADMAP.md counted five
+  exclusions where RULES.md has six, and OPEN_POINTS.md named a function the
+  analyzer no longer has and a call it no longer makes. Each says what ships.
 
 ## [0.8.0] - 2026-11-25
 
