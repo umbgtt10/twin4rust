@@ -6,6 +6,8 @@ use serge4rust::gates::gate::Gate;
 use serge4rust::gates::gate_failure::GateFailure;
 use serge4rust::process::command_runner::CommandRunner;
 
+const UNMIRRORED: i32 = 1;
+
 pub struct TwinSelfGate<'a> {
     runner: &'a dyn CommandRunner,
     binary: String,
@@ -58,9 +60,14 @@ impl Gate for TwinSelfGate<'_> {
             args.push(package.clone());
         }
 
+        // 1 is the one code the tool fails with: a mirror missing or unearned,
+        // or an error it names on stderr. Anything else, cargo's 101 for a
+        // build that failed or a signal, means the tool never ran or never
+        // finished.
         match self.runner.run_streaming("cargo", &args)? {
             Some(0) => Ok(()),
-            _ => Err(GateFailure::Unmirrored),
+            Some(UNMIRRORED) => Err(GateFailure::Unmirrored),
+            code => Err(GateFailure::CouldNotRun { exit_code: code }),
         }
     }
 }

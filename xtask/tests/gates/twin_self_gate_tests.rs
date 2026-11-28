@@ -102,7 +102,37 @@ fn run_passes_the_manifest_path_to_the_tool() {
 }
 
 #[test]
-fn run_with_a_non_zero_exit_code_reports_a_missing_mirrored_test() {
+fn run_with_a_zero_exit_code_returns_ok() {
+    // Arrange
+    let runner = FakeCommandRunner::new();
+
+    // Act
+    let result = gate(&runner).run();
+
+    // Assert
+    assert!(result.is_ok());
+}
+
+// 1 is the one code the tool fails with. cargo exits 101 when it cannot build
+// the tool, and clap 2 on arguments it refuses: the tool never ran, so no
+// mirror was looked for.
+#[test]
+fn run_with_an_exit_code_the_tool_does_not_document_reports_it_could_not_run() {
+    // Arrange
+    let runner = FakeCommandRunner::new().with_streaming_code(Some(101));
+
+    // Act
+    let result = gate(&runner).run();
+
+    // Assert
+    assert_eq!(
+        result.map_err(|failure| failure.to_string()),
+        Err(String::from("could not run, exit code 101"))
+    );
+}
+
+#[test]
+fn run_with_exit_code_one_reports_a_missing_mirrored_test() {
     // Arrange
     let runner = FakeCommandRunner::new().with_streaming_code(Some(1));
 
@@ -116,20 +146,9 @@ fn run_with_a_non_zero_exit_code_reports_a_missing_mirrored_test() {
     );
 }
 
-#[test]
-fn run_with_a_zero_exit_code_returns_ok() {
-    // Arrange
-    let runner = FakeCommandRunner::new();
-
-    // Act
-    let result = gate(&runner).run();
-
-    // Assert
-    assert!(result.is_ok());
-}
-
 // None means the process was signalled rather than exiting. That is a failure,
-// not a pass, and the arm that treats it as one would be easy to write.
+// not a pass, and the arm that treats it as one would be easy to write; nor is
+// it a missing mirror, since the tool never finished.
 #[test]
 fn run_with_no_exit_code_is_a_failure_rather_than_a_pass() {
     // Arrange
@@ -139,5 +158,8 @@ fn run_with_no_exit_code_is_a_failure_rather_than_a_pass() {
     let result = gate(&runner).run();
 
     // Assert
-    assert!(result.is_err());
+    assert_eq!(
+        result.map_err(|failure| failure.to_string()),
+        Err(String::from("could not run, terminated by signal"))
+    );
 }

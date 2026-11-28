@@ -53,7 +53,7 @@ committed on its own. Breaking versions are a separate decision, not taken here.
 
 Stage 2 is `cargo xtask stage2` -- a real crate under `xtask/`, gated like any
 other code, rather than a script. Its gates come from serge4rust, the house's
-gate library, taken from crates.io as `serge4rust = "0.3.2"`: each is a `Gate`
+gate library, taken from crates.io as `serge4rust = "0.3.3"`: each is a `Gate`
 implementation constructed against a `CommandRunner` trait, so the argument
 lists and the failure messages are covered by serge4rust's own integration
 tests, and the stage, the runner, the failures, crap4rust's report and the
@@ -191,7 +191,10 @@ where a clone asks it to: `just hooks`, once a clone, on each machine.
 
 cargo-twin4rust is deliberately not in that list. The self-analysis gate builds
 it from this checkout -- `cli`'s binary, pointed at `core` and `cli` -- so the
-tree being checked is the tree being changed.
+tree being checked is the tree being changed. Only the tool's exit code 1, a
+mirror missing or unearned, fails it as source files without a mirrored test;
+any other end -- cargo's 101 for a build that failed, clap's 2, a signal -- is
+serge4rust's `could not run`, with how the run ended.
 
 ### Upgrades are planned against the stages
 

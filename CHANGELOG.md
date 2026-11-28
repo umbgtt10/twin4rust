@@ -33,6 +33,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   and its tests. The stages run the same gates in the same order, and the
   score block reads as before. `serde` leaves the workspace's dependencies, as
   xtask was the only member taking it. The published crates are unaffected.
+- `xtask` takes serge4rust 0.3.3, which says how a run ended plainly -- `could
+  not run, exit code 2`, `could not run, terminated by signal` -- where 0.3.2
+  printed the `Option` of its exit code. The self-analysis gate fails as
+  "source files without a mirrored test" on the tool's exit code 1 alone; any
+  other end, cargo's 101 for a build that failed or a signal, is `could not
+  run` with how the run ended, where it was reported as a missing mirror.
 - **`twin4rust-core` depends on syn 3 (`3.0.10`) where it depended on syn 2.**
   Its public functions that take or return syn's types take and return syn
   3's: `AccessorClassifier::is_accessor` and `is_plain_constructor`,
