@@ -82,7 +82,7 @@ This document describes the feature set currently shipped by
 ### Project
 
 - `docs/RULES.md`, `docs/ARCHITECTURE.md`, `docs/ADRs/`, `CLAUDE.md`
-- `just stage1` (lock sync, fmt, clippy, tests) and `just stage2`
+- `just stage1` (fmt, clippy, tests) and `just stage2`
   (`cargo xtask stage2`: technology-free core, house rules, unused
   dependencies, duplication, CRAP gate, mirrored-test self-analysis, file risk,
   dependency advisories, licences and sources), both running the same on

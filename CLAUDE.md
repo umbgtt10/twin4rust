@@ -43,13 +43,9 @@ Both run identically on Windows, Linux and macOS, and CI runs the same two
 commands -- there is no second definition of the gates to drift out of step.
 
 Stage 1 is formatting, clippy and tests -- cargo built-ins only, so it works on
-a fresh checkout with none of the house tools installed.
-
-`just stage1` starts with `just sync`: `cargo update`, every dependency to its
-newest compatible version, in the lock file only, while the tools are in
-development. It needs the network. A requirement in a manifest never moves, so a
-published crate's users can still resolve what they could; what it moves is
-committed on its own. Breaking versions are a separate decision, not taken here.
+a fresh checkout with none of the house tools installed. It moves no lock file:
+`just ripe` plans each compatible move, and the round applies it under both
+stages, where a `cargo update` would move more than the upgrade being checked.
 
 Stage 2 is `cargo xtask stage2` -- a real crate under `xtask/`, gated like any
 other code, rather than a script. Its gates come from serge4rust, the house's
