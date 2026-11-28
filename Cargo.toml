@@ -27,8 +27,8 @@ anyhow = "1.0.98"
 cargo_metadata = "0.23.1"
 clap = { version = "4.6.0", features = ["derive"] }
 quote = "1.0"
-serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serge4rust = "0.3.2"
 syn = { version = "2.0.117", features = ["full", "visit"] }
 tempfile = "3"
 twin4rust-core = { path = "core", version = "0.8.0" }
@@ -38,3 +38,8 @@ walkdir = "2.5.0"
 # says so at its crate root as well.
 [workspace.lints.rust]
 unsafe_code = "forbid"
+
+# The two stages, as ripe4rust's gates: an upgrade it plans is judged ripe by
+# whether both stay green, rather than asked.
+[workspace.metadata.ripe4rust]
+gates = ["just stage1", "just stage2"]

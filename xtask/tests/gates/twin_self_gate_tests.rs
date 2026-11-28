@@ -2,8 +2,8 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use crate::process::command_runner_tests::FakeCommandRunner;
-use xtask::gates::gate::Gate;
+use crate::support::fake_command_runner::FakeCommandRunner;
+use serge4rust::gates::gate::Gate;
 use xtask::gates::twin_self_gate::TwinSelfGate;
 
 fn gate(runner: &FakeCommandRunner) -> TwinSelfGate<'_> {

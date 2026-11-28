@@ -2,9 +2,9 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-use crate::gates::gate::Gate;
-use crate::gates::gate_failure::GateFailure;
-use crate::process::command_runner::CommandRunner;
+use serge4rust::gates::gate::Gate;
+use serge4rust::gates::gate_failure::GateFailure;
+use serge4rust::process::command_runner::CommandRunner;
 
 pub struct TwinSelfGate<'a> {
     runner: &'a dyn CommandRunner,
@@ -60,9 +60,7 @@ impl Gate for TwinSelfGate<'_> {
 
         match self.runner.run_streaming("cargo", &args)? {
             Some(0) => Ok(()),
-            _ => Err(GateFailure::Found(String::from(
-                "source files without a mirrored test",
-            ))),
+            _ => Err(GateFailure::Unmirrored),
         }
     }
 }

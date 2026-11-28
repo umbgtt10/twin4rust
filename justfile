@@ -45,3 +45,7 @@ stage1: sync
 # rule the tool exists to enforce.
 stage2:
     cargo xtask stage2
+
+# The upgrades ripe4rust plans against the two stages the root manifest names as its gates; it applies nothing.
+ripe:
+    cargo ripe4rust plan
