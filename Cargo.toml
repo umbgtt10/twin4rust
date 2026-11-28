@@ -29,7 +29,7 @@ clap = { version = "4.6.0", features = ["derive"] }
 quote = "1.0"
 serde_json = "1.0"
 serge4rust = "0.3.2"
-syn = { version = "2.0.117", features = ["full", "visit"] }
+syn = { version = "3.0.10", features = ["full", "visit"] }
 tempfile = "3"
 twin4rust-core = { path = "core", version = "0.8.0" }
 walkdir = "2.5.0"

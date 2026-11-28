@@ -232,6 +232,18 @@ fn is_accessor_on_a_getter_lending_a_field_returns_true() {
 }
 
 #[test]
+fn is_accessor_on_a_getter_lending_self_for_a_lifetime_returns_true() {
+    // Arrange
+    let method = method("pub fn id(&'a self) -> u32 { self.id }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(result);
+}
+
+#[test]
 fn is_accessor_on_a_getter_reading_a_field_in_parentheses_returns_true() {
     // Arrange
     let method = method("pub fn id(&self) -> u32 { (self.id) }");
@@ -283,6 +295,18 @@ fn is_accessor_on_a_getter_with_a_mutable_receiver_returns_false() {
 fn is_accessor_on_a_getter_with_a_parameter_returns_false() {
     // Arrange
     let method = method("pub fn id(&self, offset: u32) -> u32 { self.id }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(!result);
+}
+
+#[test]
+fn is_accessor_on_a_getter_with_a_typed_receiver_returns_false() {
+    // Arrange
+    let method = method("pub fn id(self: &Self) -> u32 { self.id }");
 
     // Act
     let result = classifier().is_accessor(&method, "Holder");
@@ -421,6 +445,30 @@ fn is_accessor_on_a_step_with_a_computed_field_returns_false() {
 
     // Assert
     assert!(!result);
+}
+
+#[test]
+fn is_accessor_on_a_step_with_a_mutable_receiver_returns_true() {
+    // Arrange
+    let method = method("pub fn with_id(mut self, id: u32) -> Self { Self { id, ..self } }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(result);
+}
+
+#[test]
+fn is_accessor_on_a_step_with_a_typed_receiver_returns_true() {
+    // Arrange
+    let method = method("pub fn with_id(self: Self, id: u32) -> Self { Self { id, ..self } }");
+
+    // Act
+    let result = classifier().is_accessor(&method, "Holder");
+
+    // Assert
+    assert!(result);
 }
 
 #[test]

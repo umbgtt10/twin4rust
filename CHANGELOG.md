@@ -33,6 +33,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   and its tests. The stages run the same gates in the same order, and the
   score block reads as before. `serde` leaves the workspace's dependencies, as
   xtask was the only member taking it. The published crates are unaffected.
+- **`twin4rust-core` depends on syn 3 (`3.0.10`) where it depended on syn 2.**
+  Its public functions that take or return syn's types take and return syn
+  3's: `AccessorClassifier::is_accessor` and `is_plain_constructor`,
+  `MethodParts`, `DataHolderDetector`, `HumbleAdapterDetector`,
+  `BehaviourlessImplDetector`, `DefinitionAnalyzer::has_test_attrs` and
+  `ParseFailure::cause`, so a dependent handing them syn 2's types moves to
+  syn 3 with it. syn 3 splits a method's receiver into a `ReceiverKind`: a
+  getter still takes `&self` alone, and a step any receiver that is not a
+  reference, `self: Self` and `mut self` included, as before. What
+  `cargo twin4rust` reports is unchanged: its output and exit codes were byte
+  for byte the same on three bookkeeper workspaces and on this one, every
+  package of each, as they stood and with every mirror removed or every one
+  added. syn 2 leaves the dependency tree, where clap's and serde's derives
+  already took syn 3.
 
 ## [0.8.0] - 2026-11-25
 

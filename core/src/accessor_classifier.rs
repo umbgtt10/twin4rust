@@ -4,7 +4,7 @@
 
 use alloc::string::{String, ToString};
 
-use syn::{Expr, ImplItemFn, Path, PathSegment, ReturnType, Type, UnOp};
+use syn::{Expr, ImplItemFn, Path, PathSegment, ReceiverKind, ReturnType, Type, UnOp};
 
 use crate::syntax::method_parts::MethodParts;
 
@@ -75,7 +75,7 @@ impl AccessorClassifier {
     fn is_getter(parts: &MethodParts) -> bool {
         let shared = parts
             .receiver()
-            .is_some_and(|receiver| receiver.reference.is_some() && receiver.mutability.is_none());
+            .is_some_and(|receiver| matches!(receiver.kind, ReceiverKind::Reference(_, _, None)));
         shared
             && parts.input_count() == 1
             && parts.single_expression().is_some_and(Self::reads_one_field)
@@ -84,7 +84,7 @@ impl AccessorClassifier {
     fn is_step(parts: &MethodParts, type_name: &str) -> bool {
         let by_value = parts
             .receiver()
-            .is_some_and(|receiver| receiver.reference.is_none());
+            .is_some_and(|receiver| !matches!(receiver.kind, ReceiverKind::Reference(..)));
         let parameters = parts.parameter_names();
         let Some(Expr::Struct(literal)) = parts.single_expression() else {
             return false;
