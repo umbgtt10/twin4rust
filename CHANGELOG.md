@@ -15,7 +15,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - The root manifest names the two stages as ripe4rust's gates,
   `[workspace.metadata.ripe4rust] gates = ["just stage1", "just stage2"]`, so
   an upgrade can be judged ripe rather than asked; `just ripe` runs
-  `cargo ripe4rust plan`, which reports the plan and applies nothing.
+  `cargo ripe4rust plan`, which reports the plan and applies nothing. It names
+  `twin4rust-core` as `published`, so a breaking dependency in that crate's
+  public API is asked as a breaking change of its own.
 
 ### Changed
 - `AccessorClassifier` reads a method through `MethodParts` rather than three

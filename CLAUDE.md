@@ -200,7 +200,11 @@ serge4rust's `could not run`, with how the run ended.
 
 The root `Cargo.toml` names the two stages as ripe4rust's gates,
 `[workspace.metadata.ripe4rust] gates = ["just stage1", "just stage2"]`, so an
-upgrade can be judged ripe rather than asked. `just ripe` runs
+upgrade can be judged ripe rather than asked. `published = ["twin4rust-core"]`
+names the crate others depend on as a library, so a breaking upgrade of a
+dependency whose types reach its public API -- syn's, for one -- is asked as a
+breaking change of ours (ripe4rust's rule 8). `cargo-twin4rust` is not named:
+it is a subcommand, and its library is kept for its own tests. `just ripe` runs
 `cargo ripe4rust plan`: it reports the plan and applies nothing.
 
 `cargo install cargo-ripe4rust`
