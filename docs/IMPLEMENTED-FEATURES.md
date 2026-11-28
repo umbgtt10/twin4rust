@@ -5,7 +5,7 @@ This document describes the feature set currently shipped by
 [RULES.md](RULES.md); for released versions, see
 [CHANGELOG.md](../CHANGELOG.md).
 
-## Version 0.4.0
+## Version 0.8.0
 
 ### Analysis
 
@@ -23,12 +23,13 @@ This document describes the feature set currently shipped by
   keeps the file in scope
 - Exclusion of trait impls carrying no methods, such as `impl Marker for T {}`
   and blanket alias impls
-- Exclusion of single-type files whose only inherent `impl` is a trivial `new`:
-  no generics, returns `Self`, single struct-literal body, no branching, no
-  loops, no helper calls. Any second `impl` block forfeits the exclusion — a
-  trait impl carrying a method or a second inherent impl both disqualify — and
-  so does a top-level macro invocation. Only a method-free trait impl is
-  tolerated beside the constructor
+- Exclusion of data holders: a single `struct`, declared before its impls,
+  whose inherent methods, across any number of inherent `impl` blocks, are all
+  accessors in stern4rust's shapes — a getter reading one field, a plain
+  constructor building its type from bare parameters, a `with_` step replacing
+  one field — with at least one. A trait impl carrying a method, a second type
+  or a top-level macro invocation forfeits the exclusion; only a method-free
+  trait impl is tolerated beside the accessors
 - Exclusion of humble adapters: a single type whose inherent methods are all
   either a constructor or a forwarding method. A constructor is a plain
   constructor of the data-holder rule's shape, or a trivial `new` whose fields
@@ -39,6 +40,10 @@ This document describes the feature set currently shipped by
   applied both at source-root resolution and per file
 - `#[cfg(test)]` items stripped before any classification runs
 - Files with no top-level items at all are reported rather than excluded
+- A mirror for a source that earns none — a definition-only file or a data
+  holder, carrying no trait default method — is reported as unearned and fails
+  the run; a humble adapter, and definitions carrying a trait's default method,
+  may have a mirror without one being demanded
 
 ### Resolution
 
@@ -53,19 +58,23 @@ This document describes the feature set currently shipped by
 
 ### Reporting
 
-- Human-readable report listing `package: source -> expected test`
-- Gaps sorted by package name, then source path, then expected test path, so
-  output is stable across runs and diffable in CI
-- `summary: packages_with_gaps=N missing_files=M` trailer
-- Exit code `1` when any gap is found, `0` otherwise
-- Path separators normalized to `/` so Windows and Linux output is identical
+- Human-readable report listing `package: source -> expected test`, and,
+  under "Mirrored test files for sources that earn none", each unearned mirror
+  as `package: source -> mirror`
+- Gaps and unearned mirrors sorted by package name, then source path, then test
+  path, so output is stable across runs and diffable in CI
+- `summary: packages_with_gaps=N missing_files=M` trailer, with
+  `unearned_mirrors=K` when there is one
+- Exit code `1` when any gap or unearned mirror is found, `0` otherwise
+- Path separators normalized to `/` so Windows and Linux output is identical; a
+  `.rs` file whose path is not UTF-8 fails the run, named
 
 ### Packaging
 
-- Published as `cargo-twin4rust` so cargo resolves `cargo twin4rust`; library
-  name is `twin4rust`. Unreleased: the command and the analysis become two
-  crates, the library published as `twin4rust-core` -- see the
-  [CHANGELOG](../CHANGELOG.md)
+- Two crates of one version: the command, published as `cargo-twin4rust` so
+  cargo resolves `cargo twin4rust` (library `twin4rust_cli`), and the analysis,
+  published as `twin4rust-core` (library `twin4rust`): `#![no_std]`, depending
+  on quote and syn alone
 - Conditional strip of the subcommand name cargo inserts at `argv[1]`, leaving
   direct invocation and a package named `twin4rust` both intact
 - `--version` and `bin_name`-corrected help output
@@ -73,7 +82,9 @@ This document describes the feature set currently shipped by
 ### Project
 
 - `docs/RULES.md`, `docs/ARCHITECTURE.md`, `docs/ADRs/`, `CLAUDE.md`
-- `just stage1` (fmt, clippy, tests) and `just stage2` (`cargo xtask stage2`:
-  house rules, duplication, CRAP gate, mirrored-test self-analysis, file risk),
-  both running the same on Windows, Linux and macOS and both run by CI
+- `just stage1` (lock sync, fmt, clippy, tests) and `just stage2`
+  (`cargo xtask stage2`: technology-free core, house rules, unused
+  dependencies, duplication, CRAP gate, mirrored-test self-analysis, file risk,
+  dependency advisories, licences and sources), both running the same on
+  Windows, Linux and macOS and both run by CI
 - Test files named to mirror their subject, so the tool passes its own gate

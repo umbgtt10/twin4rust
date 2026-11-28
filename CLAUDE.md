@@ -53,7 +53,7 @@ committed on its own. Breaking versions are a separate decision, not taken here.
 
 Stage 2 is `cargo xtask stage2` -- a real crate under `xtask/`, gated like any
 other code, rather than a script. Its gates come from serge4rust, the house's
-gate library, taken from crates.io as `serge4rust = "0.3.2"`: each is a `Gate`
+gate library, taken from crates.io as `serge4rust = "0.3.3"`: each is a `Gate`
 implementation constructed against a `CommandRunner` trait, so the argument
 lists and the failure messages are covered by serge4rust's own integration
 tests, and the stage, the runner, the failures, crap4rust's report and the
@@ -118,10 +118,11 @@ inherit, so today any group at all fails the gate.
 
 It counts only code units of 25 AST nodes or more, the floor the rest of the
 family uses. Below it sit units that look alike because there is one way to
-write them: three `new` constructors whose whole body is a one-field struct
-literal, and `AnalysisReport`'s two one-line accessors. At dry4rust's default of 10 those are
-two groups that sharing would not improve; at 25 they drop out, and a copied
-method body of any real size is still caught.
+write them: one-line accessors, `new` constructors whose whole body is a
+one-field struct literal, and the failures' `From`, `Display` and
+`Error::source` impls. At dry4rust's default of 10 those are eight groups across
+`core/src` and `cli/src` that sharing would not improve; at 25 they drop out,
+and a copied method body of any real size is still caught.
 
 Re-record the baseline only to drop groups that are gone, never to admit new
 ones, and at the same floor -- a baseline matches only at the floor it was
@@ -131,9 +132,9 @@ crap4rust, the self-analysis and iceberg4rust measure the two published crates,
 `twin4rust-core` and `cargo-twin4rust`: their bill is the tool's, not the
 xtask's, which is held to the house rules alone.
 
-All twenty-two of its rules are enforced, with nothing skipped, nothing
-unconfigured and no baseline: `stern4rust.toml` carries no `skip` and no `rules`
-selection. That includes `returned-mutations`, which is the "no `&mut` input
+All thirty-nine of stern4rust's rules (cargo-stern4rust 0.24.0) are enforced,
+with nothing skipped, nothing unconfigured and no baseline: `stern4rust.toml`
+carries no `skip` and no `rules` selection. That includes `returned-mutations`, which is the "no `&mut` input
 parameters" standard below made mechanical. `docs/header.txt` holds the
 three-line header every `.rs` file carries and `stern4rust.toml` names it -- in
 the config rather than the gate script, so a hand-run of `cargo stern4rust`
@@ -190,13 +191,20 @@ where a clone asks it to: `just hooks`, once a clone, on each machine.
 
 cargo-twin4rust is deliberately not in that list. The self-analysis gate builds
 it from this checkout -- `cli`'s binary, pointed at `core` and `cli` -- so the
-tree being checked is the tree being changed.
+tree being checked is the tree being changed. Only the tool's exit code 1, a
+mirror missing or unearned, fails it as source files without a mirrored test;
+any other end -- cargo's 101 for a build that failed, clap's 2, a signal -- is
+serge4rust's `could not run`, with how the run ended.
 
 ### Upgrades are planned against the stages
 
 The root `Cargo.toml` names the two stages as ripe4rust's gates,
 `[workspace.metadata.ripe4rust] gates = ["just stage1", "just stage2"]`, so an
-upgrade can be judged ripe rather than asked. `just ripe` runs
+upgrade can be judged ripe rather than asked. `published = ["twin4rust-core"]`
+names the crate others depend on as a library, so a breaking upgrade of a
+dependency whose types reach its public API -- syn's, for one -- is asked as a
+breaking change of ours (ripe4rust's rule 8). `cargo-twin4rust` is not named:
+it is a subcommand, and its library is kept for its own tests. `just ripe` runs
 `cargo ripe4rust plan`: it reports the plan and applies nothing.
 
 `cargo install cargo-ripe4rust`
@@ -238,7 +246,9 @@ Whatever technology core needs is a port: a trait in `core/src/traits/`
 (`WorkspaceReader`, `SourceTree`, `ReportRenderer`), `Sync` so a `Runner`
 holding it stays `Send`; the data it speaks in `core/src/workspace/` or beside
 its user; an in-memory fake for core's tests in `core/tests/support/`; and the
-real adapter in `cli/src/system/`, composed in `cli`'s `EntryPoint`. Paths in
+real adapter in `cli/src/system/`, composed in `cli`'s `EntryPoint` -- but for
+`ReportRenderer`, whose `TextReportRenderer` is pure string building and core's
+own. Paths in
 core are `SourcePath`s, text whose only separator is `/`; `cli`'s `PortablePath`
 converts at the edge, and a `.rs` path that is not UTF-8 fails the run rather
 than being reported under a lossy name. core's failures are typed (`RunFailure`

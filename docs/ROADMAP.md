@@ -33,8 +33,9 @@ The long-term direction is:
 ## Current Baseline
 
 The shipped release provides `cargo twin4rust` as a published cargo subcommand,
-the mirrored-path check with its five exclusion categories, production-target
-source-root resolution, stable sorted reporting, and CI-ready exit codes. See
+the mirrored-path check with its six exclusion categories, the refusal of
+mirrors a source does not earn, production-target source-root resolution,
+stable sorted reporting, and CI-ready exit codes. See
 [IMPLEMENTED-FEATURES.md](IMPLEMENTED-FEATURES.md) for the full list.
 
 ## Planned Phases

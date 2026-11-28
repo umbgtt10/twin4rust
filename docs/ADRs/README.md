@@ -3,8 +3,8 @@
 Each ADR documents one load-bearing decision behind `cargo-twin4rust` —
 succinct, self-contained, citable on its own. Like the sibling `crap4rust`
 tool and unlike the larger `etheram` ecosystem repos, these are not
-priority-tiered: a single-crate CLI has a small enough decision surface that a
-flat list is sufficient.
+priority-tiered: a CLI of two small crates has a small enough decision surface
+that a flat list is sufficient.
 
 ## Index
 

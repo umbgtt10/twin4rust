@@ -66,7 +66,7 @@ file named `mod.rs`.
 
 The second rule subsumes the first. A `mod.rs` that is *not* import-only falls
 through the `Analyzer` branch, gets parsed a second time by
-`is_definition_only_source`, and is then dropped anyway when the resolver
+`DefinitionAnalyzer::mirror_expectation`, and is then dropped anyway when the resolver
 declines to produce a path. Observed on a `src/feature/mod.rs` carrying two
 branching functions and no mirror: reported as satisfied, exit `0`.
 
@@ -82,20 +82,23 @@ be reported. `docs/RULES.md` currently documents the observed behaviour (never
 reported) rather than the apparent intent, so the docs are correct either way,
 but they describe a rule implemented in a confusing place.
 
-## Every file is read and parsed before its mirror's existence is checked
+## A file with no mirror path is read and parsed before the path is asked for
 
 `Analyzer::check_source_file` reads the source, runs the `mod.rs` check, and
-runs the full `syn` definition-only classification — and only then asks
-`TestFileResolver` for a path and calls `exists()` on it.
+runs the full `syn` classification, `DefinitionAnalyzer::mirror_expectation` —
+and only then asks `TestFileResolver` for a path and the `SourceTree` whether
+it `contains` it. A file the resolver derives no path for — a `mod.rs` that is
+not import-only, a `main.rs` or `lib.rs` below `src/`, a file outside `src/` —
+is read and parsed for nothing.
 
-In a healthy repository the overwhelming majority of files have their mirror,
-so the parse is performed and discarded for almost every file analyzed. Moving
-the existence check ahead of the read would skip both the I/O and the parse for
-that whole majority, leaving the classification to run only on files that are
-about to be reported.
+That is the only waste left in the order. Since unearned mirrors are reported,
+a file that has a mirror path is classified whether its mirror exists or not: a
+missing mirror matters only if the file is `Required`, a present one only if it
+is `Unearned`. So the existence check cannot move ahead of the parse; the path
+derivation, which needs neither the read nor the parse, can.
 
 Not started, and not urgent: analysis of a mid-sized workspace is already
-sub-second. Recorded because the current ordering is the exact inverse of the
+sub-second. Recorded because the current ordering is the inverse of the
 cheap-check-first shape, and that is a deliberate-looking choice that was not
 in fact deliberate.
 

@@ -11,7 +11,8 @@ use crate::missing_test_gap::MissingTestGap;
 use crate::traits::report_renderer::ReportRenderer;
 use crate::unearned_mirror::UnearnedMirror;
 
-// The report for a reader: every gap in a stable order, then a summary line.
+// The report for a reader: every gap, then every unearned mirror, in a stable
+// order, then a summary line.
 // Pure string building.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TextReportRenderer;

@@ -12,12 +12,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   one expression that is its whole body. It opens a `syntax` module, readings
   of syn's tree that apply no rule of their own: `core/src` already held the 20
   files stern4rust's `directory-file-count` allows a directory.
+- The root manifest names the two stages as ripe4rust's gates,
+  `[workspace.metadata.ripe4rust] gates = ["just stage1", "just stage2"]`, so
+  an upgrade can be judged ripe rather than asked; `just ripe` runs
+  `cargo ripe4rust plan`, which reports the plan and applies nothing. It names
+  `twin4rust-core` as `published`, so a breaking dependency in that crate's
+  public API is asked as a breaking change of its own.
 
 ### Changed
 - `AccessorClassifier` reads a method through `MethodParts` rather than three
   private functions of its own. cargo-iceberg4rust 0.5.0, which counts control
   flow inside a closure, scored `accessor_classifier.rs` 9.29 against the
   gate's ceiling of 9.1; it scores 4.49 now. No change in behaviour.
+- `xtask` takes its gates from serge4rust 0.3.2, the house's gate library, from
+  crates.io: the technology-free core, stern4rust, cargo-shear, dry4rust,
+  crap4rust, iceberg4rust and cargo-deny gates, the stage, the runner, the
+  failures, crap4rust's report and the commit scoring. `main.rs` builds
+  `stage2`, `sync` and `grip-braintax` from the repository's own constants. The
+  self-analysis gate, the one no other repository runs, stays in `xtask/src`
+  on serge4rust's `Gate` and `CommandRunner`, with its eight tests; the rest of
+  `xtask/src` goes, and its 154 tests with it, since serge4rust holds that code
+  and its tests. The stages run the same gates in the same order, and the
+  score block reads as before. `serde` leaves the workspace's dependencies, as
+  xtask was the only member taking it. The published crates are unaffected.
+- `xtask` takes serge4rust 0.3.3, which says how a run ended plainly -- `could
+  not run, exit code 2`, `could not run, terminated by signal` -- where 0.3.2
+  printed the `Option` of its exit code. The self-analysis gate fails as
+  "source files without a mirrored test" on the tool's exit code 1 alone; any
+  other end, cargo's 101 for a build that failed or a signal, is `could not
+  run` with how the run ended, where it was reported as a missing mirror.
+- **`twin4rust-core` depends on syn 3 (`3.0.10`) where it depended on syn 2.**
+  Its public functions that take or return syn's types take and return syn
+  3's: `AccessorClassifier::is_accessor` and `is_plain_constructor`,
+  `MethodParts`, `DataHolderDetector`, `HumbleAdapterDetector`,
+  `BehaviourlessImplDetector`, `DefinitionAnalyzer::has_test_attrs` and
+  `ParseFailure::cause`, so a dependent handing them syn 2's types moves to
+  syn 3 with it. syn 3 splits a method's receiver into a `ReceiverKind`: a
+  getter still takes `&self` alone, and a step any receiver that is not a
+  reference, `self: Self` and `mut self` included, as before. What
+  `cargo twin4rust` reports is unchanged: its output and exit codes were byte
+  for byte the same on three bookkeeper workspaces and on this one, every
+  package of each, as they stood and with every mirror removed or every one
+  added. syn 2 leaves the dependency tree, where clap's and serde's derives
+  already took syn 3.
+- `twin4rust-core` takes syn without its `visit` feature, which no member's
+  code uses since xtask's own technology scan moved to serge4rust, which asks
+  for it itself; a dependent that walked syn's tree through it names the
+  feature itself. What `cargo twin4rust` reports is byte for byte the same on
+  the same workspaces.
 
 ## [0.8.0] - 2026-11-25
 
