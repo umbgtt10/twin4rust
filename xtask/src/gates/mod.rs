@@ -2,16 +2,4 @@
 // Licensed under the MIT License
 // SPDX-License-Identifier: MIT
 
-pub mod boundary_gate;
-pub mod cargo_update_gate;
-pub mod crap_gate;
-pub mod deny_gate;
-pub mod dry_gate;
-pub mod gate;
-pub mod gate_failure;
-pub mod iceberg_gate;
-pub mod shear_gate;
-pub mod stage2;
-pub mod stage_failure;
-pub mod stern_gate;
 pub mod twin_self_gate;

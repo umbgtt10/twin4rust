@@ -52,10 +52,16 @@ published crate's users can still resolve what they could; what it moves is
 committed on its own. Breaking versions are a separate decision, not taken here.
 
 Stage 2 is `cargo xtask stage2` -- a real crate under `xtask/`, gated like any
-other code, rather than a script. Each gate is a `Gate` implementation
-constructed against a `CommandRunner` trait, so the argument lists and the
-failure messages are covered by `xtask`'s own integration tests. It runs eight
-gates, in this order:
+other code, rather than a script. Its gates come from serge4rust, the house's
+gate library, taken from crates.io as `serge4rust = "0.3.2"`: each is a `Gate`
+implementation constructed against a `CommandRunner` trait, so the argument
+lists and the failure messages are covered by serge4rust's own integration
+tests, and the stage, the runner, the failures, crap4rust's report and the
+commit scoring come with them. `xtask` keeps `main.rs`, which builds the stages
+from this repository's own constants, and the one gate no other repository
+runs, the self-analysis, on the same traits with its own tests. A gate that
+needs a change is changed in serge4rust and released, never patched in place
+here. It runs eight gates, in this order:
 
 | gate | asks |
 |---|---|
@@ -68,7 +74,7 @@ gates, in this order:
 | `cargo iceberg4rust` | is any file's private implementation risk too high |
 | `cargo deny` | do the dependencies carry an advisory, a refused licence or a foreign source |
 
-The technology-free gate runs **first**. It is the xtask's own -- no tool to
+The technology-free gate runs **first**. It is serge4rust's -- no tool to
 install -- and asks three things of `core`: that its manifest names only
 `quote` and `syn`, in any section (read from `cargo metadata --no-deps`; a
 package missing from the metadata fails); that `core/src/lib.rs` carries
