@@ -53,6 +53,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   package of each, as they stood and with every mirror removed or every one
   added. syn 2 leaves the dependency tree, where clap's and serde's derives
   already took syn 3.
+- `twin4rust-core` takes syn without its `visit` feature, which no member's
+  code uses since xtask's own technology scan moved to serge4rust, which asks
+  for it itself; a dependent that walked syn's tree through it names the
+  feature itself. What `cargo twin4rust` reports is byte for byte the same on
+  the same workspaces.
 
 ## [0.8.0] - 2026-11-25
 
