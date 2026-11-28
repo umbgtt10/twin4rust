@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+### Removed
+- `just sync` and `cargo xtask sync`: stage 1 no longer starts with
+  `cargo update`. `just ripe` plans each compatible move and the round applies
+  it under both stages; a blind sync inside them moved more than the upgrade
+  being checked.
+
 ## [0.9.0] - 2026-11-28
 
 Breaking for a dependent of `twin4rust-core`: it depends on syn 3 where it

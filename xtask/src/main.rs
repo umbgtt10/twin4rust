@@ -8,7 +8,6 @@ use serge4rust::gates::boundary::crate_root_attributes::CrateRootAttributes;
 use serge4rust::gates::boundary::disk_source_files::DiskSourceFiles;
 use serge4rust::gates::boundary::package_dependencies::PackageDependencies;
 use serge4rust::gates::boundary_gate::BoundaryGate;
-use serge4rust::gates::cargo_update_gate::CargoUpdateGate;
 use serge4rust::gates::crap_gate::CrapGate;
 use serge4rust::gates::deny_gate::DenyGate;
 use serge4rust::gates::dry_gate::DryGate;
@@ -66,26 +65,9 @@ const DENY_FETCH_ATTEMPTS: usize = 3;
 fn main() -> ExitCode {
     match args().nth(1).as_deref() {
         Some("stage2") => run_stage2(),
-        Some("sync") => run_sync(),
         Some("grip-braintax") => run_grip_braintax(),
         _ => {
-            eprintln!("usage: cargo xtask <stage2|sync|grip-braintax>");
-            ExitCode::FAILURE
-        }
-    }
-}
-
-// Stage 1's first step: the lock file to the newest compatible versions.
-fn run_sync() -> ExitCode {
-    let runner = SystemCommandRunner::new();
-    let update = CargoUpdateGate::new(&runner, workspace_manifest_path());
-    match Stage::new(vec![&update]).run() {
-        Ok(()) => {
-            println!("\ntwin4rust sync done");
-            ExitCode::SUCCESS
-        }
-        Err(reason) => {
-            eprintln!("\nFailed: {reason}");
+            eprintln!("usage: cargo xtask <stage2|grip-braintax>");
             ExitCode::FAILURE
         }
     }
