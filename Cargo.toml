@@ -38,3 +38,8 @@ walkdir = "2.5.0"
 # says so at its crate root as well.
 [workspace.lints.rust]
 unsafe_code = "forbid"
+
+# The two stages, as ripe4rust's gates: an upgrade it plans is judged ripe by
+# whether both stay green, rather than asked.
+[workspace.metadata.ripe4rust]
+gates = ["just stage1", "just stage2"]

@@ -192,6 +192,15 @@ cargo-twin4rust is deliberately not in that list. The self-analysis gate builds
 it from this checkout -- `cli`'s binary, pointed at `core` and `cli` -- so the
 tree being checked is the tree being changed.
 
+### Upgrades are planned against the stages
+
+The root `Cargo.toml` names the two stages as ripe4rust's gates,
+`[workspace.metadata.ripe4rust] gates = ["just stage1", "just stage2"]`, so an
+upgrade can be judged ripe rather than asked. `just ripe` runs
+`cargo ripe4rust plan`: it reports the plan and applies nothing.
+
+`cargo install cargo-ripe4rust`
+
 ## Layout
 
 A workspace of three members, with a virtual root that holds no package:
