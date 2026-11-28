@@ -118,10 +118,11 @@ inherit, so today any group at all fails the gate.
 
 It counts only code units of 25 AST nodes or more, the floor the rest of the
 family uses. Below it sit units that look alike because there is one way to
-write them: three `new` constructors whose whole body is a one-field struct
-literal, and `AnalysisReport`'s two one-line accessors. At dry4rust's default of 10 those are
-two groups that sharing would not improve; at 25 they drop out, and a copied
-method body of any real size is still caught.
+write them: one-line accessors, `new` constructors whose whole body is a
+one-field struct literal, and the failures' `From`, `Display` and
+`Error::source` impls. At dry4rust's default of 10 those are eight groups across
+`core/src` and `cli/src` that sharing would not improve; at 25 they drop out,
+and a copied method body of any real size is still caught.
 
 Re-record the baseline only to drop groups that are gone, never to admit new
 ones, and at the same floor -- a baseline matches only at the floor it was
@@ -131,9 +132,9 @@ crap4rust, the self-analysis and iceberg4rust measure the two published crates,
 `twin4rust-core` and `cargo-twin4rust`: their bill is the tool's, not the
 xtask's, which is held to the house rules alone.
 
-All twenty-two of its rules are enforced, with nothing skipped, nothing
-unconfigured and no baseline: `stern4rust.toml` carries no `skip` and no `rules`
-selection. That includes `returned-mutations`, which is the "no `&mut` input
+All thirty-nine of stern4rust's rules (cargo-stern4rust 0.24.0) are enforced,
+with nothing skipped, nothing unconfigured and no baseline: `stern4rust.toml`
+carries no `skip` and no `rules` selection. That includes `returned-mutations`, which is the "no `&mut` input
 parameters" standard below made mechanical. `docs/header.txt` holds the
 three-line header every `.rs` file carries and `stern4rust.toml` names it -- in
 the config rather than the gate script, so a hand-run of `cargo stern4rust`
@@ -238,7 +239,9 @@ Whatever technology core needs is a port: a trait in `core/src/traits/`
 (`WorkspaceReader`, `SourceTree`, `ReportRenderer`), `Sync` so a `Runner`
 holding it stays `Send`; the data it speaks in `core/src/workspace/` or beside
 its user; an in-memory fake for core's tests in `core/tests/support/`; and the
-real adapter in `cli/src/system/`, composed in `cli`'s `EntryPoint`. Paths in
+real adapter in `cli/src/system/`, composed in `cli`'s `EntryPoint` -- but for
+`ReportRenderer`, whose `TextReportRenderer` is pure string building and core's
+own. Paths in
 core are `SourcePath`s, text whose only separator is `/`; `cli`'s `PortablePath`
 converts at the edge, and a `.rs` path that is not UTF-8 fails the run rather
 than being reported under a lossy name. core's failures are typed (`RunFailure`

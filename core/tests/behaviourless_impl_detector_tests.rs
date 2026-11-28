@@ -3,10 +3,10 @@
 // SPDX-License-Identifier: MIT
 
 // Which impl blocks carry no executable behaviour. Both the definition-only rule
-// and the trivial-constructor rule need this answer, and before it lived here
-// only the first of them had it -- the second waved every impl block through,
-// which is what let an adapter with a real trait impl escape the gate on the
-// strength of holding a `new`.
+// and the data-holder rule need this answer, and before it lived here only the
+// first of them had it -- the second waved every impl block through, which is
+// what let an adapter with a real trait impl escape the gate on the strength of
+// holding a `new`.
 
 use syn::Item;
 use syn::parse_file;
@@ -121,9 +121,9 @@ impl Storage for Disk {
     assert!(result);
 }
 
-// The deliberate asymmetry. An inherent impl is the block the trivial-constructor
-// and humble-adapter rules count, so calling an empty one inert would let those
-// rules admit a second one and still claim the file holds exactly one.
+// The deliberate asymmetry. An inherent impl is the block the data-holder and
+// humble-adapter rules examine, method by method, and an empty one holds no
+// accessor, so calling it inert would earn a file an exemption on its own.
 #[test]
 fn is_behaviourless_impl_of_an_empty_inherent_impl_returns_false() {
     // Arrange

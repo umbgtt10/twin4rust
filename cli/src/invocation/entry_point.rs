@@ -41,8 +41,9 @@ impl EntryPoint {
 
         print!("{}", outcome.output);
 
-        // 1 for a gap, and 1 for an error via the `Err` path: a gate reading
-        // twin4rust asks only whether every mirror exists.
+        // 1 for a gap or an unearned mirror, and 1 for an error via the `Err`
+        // path: a gate reading twin4rust asks only whether every mirror is
+        // where it should be and nowhere else.
         Ok(if outcome.has_gaps {
             ExitCode::from(GAPS_FOUND)
         } else {

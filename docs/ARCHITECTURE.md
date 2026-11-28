@@ -5,8 +5,8 @@ what exists today, not a decision record — see `docs/ADRs/` for the "why"
 behind these shapes, and `docs/RULES.md` for the policy they implement.
 
 The workspace has two published crates. `core/` (`twin4rust-core`, library
-`twin4rust`) is the analysis: `#![no_std]`, no technology, every piece of it it
-needs behind a trait. `cli/` (`cargo-twin4rust`, library `twin4rust_cli`) is the
+`twin4rust`) is the analysis: `#![no_std]`, no technology, every piece of
+technology it needs behind a trait. `cli/` (`cargo-twin4rust`, library `twin4rust_cli`) is the
 command: argument parsing, the composition root, and the adapters that give the
 core's traits the real cargo metadata and the real file system. See
 `docs/ADRs/ADR-TechnologyFreeCore.md`.

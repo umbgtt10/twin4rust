@@ -12,12 +12,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   one expression that is its whole body. It opens a `syntax` module, readings
   of syn's tree that apply no rule of their own: `core/src` already held the 20
   files stern4rust's `directory-file-count` allows a directory.
+- The root manifest names the two stages as ripe4rust's gates,
+  `[workspace.metadata.ripe4rust] gates = ["just stage1", "just stage2"]`, so
+  an upgrade can be judged ripe rather than asked; `just ripe` runs
+  `cargo ripe4rust plan`, which reports the plan and applies nothing.
 
 ### Changed
 - `AccessorClassifier` reads a method through `MethodParts` rather than three
   private functions of its own. cargo-iceberg4rust 0.5.0, which counts control
   flow inside a closure, scored `accessor_classifier.rs` 9.29 against the
   gate's ceiling of 9.1; it scores 4.49 now. No change in behaviour.
+- `xtask` takes its gates from serge4rust 0.3.2, the house's gate library, from
+  crates.io: the technology-free core, stern4rust, cargo-shear, dry4rust,
+  crap4rust, iceberg4rust and cargo-deny gates, the stage, the runner, the
+  failures, crap4rust's report and the commit scoring. `main.rs` builds
+  `stage2`, `sync` and `grip-braintax` from the repository's own constants. The
+  self-analysis gate, the one no other repository runs, stays in `xtask/src`
+  on serge4rust's `Gate` and `CommandRunner`, with its eight tests; the rest of
+  `xtask/src` goes, and its 154 tests with it, since serge4rust holds that code
+  and its tests. The stages run the same gates in the same order, and the
+  score block reads as before. `serde` leaves the workspace's dependencies, as
+  xtask was the only member taking it. The published crates are unaffected.
 
 ## [0.8.0] - 2026-11-25
 

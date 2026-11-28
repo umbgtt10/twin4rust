@@ -113,10 +113,10 @@ fn run_stage2() -> ExitCode {
 
     // First: core stays free of technology -- only its allowed crates in its
     // manifest, `no_std` and `forbid(unsafe_code)` on its root, and no file
-    // system, process, environment or stdout in its tests -- so mutation testing
-    // it needs nothing but its own tests. A breach is fixed by moving code into
-    // cli, which changes what every later gate, stern4rust's included, measures;
-    // and it costs a second.
+    // system, process, environment or stdout in its sources or its tests -- so
+    // mutation testing it needs nothing but its own tests. A breach is fixed by
+    // moving code into cli, which changes what every later gate, stern4rust's
+    // included, measures; and it costs a second.
     let root = workspace_root();
     let sources = DiskSourceFiles::new();
     let dependencies = PackageDependencies::new();

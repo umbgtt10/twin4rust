@@ -18,9 +18,8 @@ impl BehaviourlessImplDetector {
     // Only an impl that carries a method is worth a test.
     //
     // An inherent impl is not behaviourless even when empty: it is the block the
-    // trivial-constructor and humble-adapter rules count, and treating a second
-    // one as inert would let those rules admit a file they both describe as
-    // holding exactly one.
+    // data-holder and humble-adapter rules examine, method by method, and an
+    // empty one holds no accessor, so it earns a file no exemption on its own.
     #[must_use]
     pub fn is_behaviourless_impl(&self, item: &Item) -> bool {
         match item {

@@ -421,8 +421,9 @@ fn impl_holds_only_accessors_on_a_bare_new_returns_true() {
 
 #[test]
 fn impl_holds_only_accessors_on_a_new_that_does_work_returns_false() {
-    // Arrange -- the body must be a single struct expression. A `new` that
-    // computes anything, even to build the same type, is not trivial.
+    // Arrange -- the body must build the type from bare parameters. A `new`
+    // that computes anything, even to build the same type, is not a plain
+    // constructor.
     let item: ItemImpl =
         parse_str("impl Holder { pub fn new() -> Self { let seed = compute(); Self { seed } } }")
             .expect("parse impl");

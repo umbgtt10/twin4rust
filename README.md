@@ -51,14 +51,17 @@ just stage2
 Both must be green before a change is complete, and both run the same way on
 Windows, Linux and macOS. Stage 1 is formatting, clippy and tests — cargo
 built-ins only, so it works on a fresh checkout with none of the tools below
-installed. Stage 2 is `cargo xtask stage2`, which runs, in order:
+but `just` installed. Stage 2 is `cargo xtask stage2`, its gates taken from the
+[`serge4rust`](https://crates.io/crates/serge4rust) library but for the
+self-analysis, which runs, in order:
 the technology-free core gate (core's manifest, crate-root attributes and the
-std it may not reach), `cargo stern4rust` (house coding rules, all twenty-two,
+std it may not reach), `cargo stern4rust` (house coding rules, all thirty-nine,
 nothing skipped), `cargo shear` (every declared dependency used),
 `cargo dry4rust` (no duplication in `core/src` and `cli/src` beyond
 `dry4rust-baseline.json`),
-`cargo crap4rust` (complexity against coverage), **twin4rust self-analysis**, and
-`cargo iceberg4rust` (file risk).
+`cargo crap4rust` (complexity against coverage), **twin4rust self-analysis**,
+`cargo iceberg4rust` (file risk), and `cargo deny` (the dependencies'
+advisories, licences and sources).
 
 The self-analysis gate runs this tool against its own manifest, built from the
 working tree rather than from an install — a tool that enforces a rule it does
@@ -70,7 +73,7 @@ The repository is a workspace of three members, all gated:
 |---|---|---|
 | `core/` | `twin4rust-core` (library `twin4rust`) | the analysis: `#![no_std]`, no technology, every piece of it behind a port |
 | `cli/` | `cargo-twin4rust` | the command: argument parsing, the composition root, and the adapters for cargo metadata and the file system |
-| `xtask/` | `xtask` | the gates behind `cargo xtask`, held to the house rules alongside the other two |
+| `xtask/` | `xtask` | the stages behind `cargo xtask`, built from serge4rust's gates and a self-analysis gate of its own, held to the house rules alongside the other two |
 
 The core is kept technology-free so that mutation testing it needs nothing but
 its own tests; `.cargo/mutants.toml` scopes cargo-mutants to it.
@@ -87,6 +90,7 @@ Everything the two stages need, none of which ships with cargo:
 | `cargo-crap4rust` | `cargo install cargo-crap4rust` | stage 2 |
 | `cargo-iceberg4rust` | `cargo install cargo-iceberg4rust` | stage 2 |
 | [`cargo-shear`](https://github.com/Boshen/cargo-shear) | `cargo install --locked cargo-shear --version 1.14.0` | stage 2 |
+| [`cargo-deny`](https://github.com/EmbarkStudios/cargo-deny) | `cargo install --locked cargo-deny --version 0.20.2` | stage 2 |
 
 `cargo-twin4rust` itself is deliberately absent — the gate builds it from your
 checkout rather than taking an installed copy.
